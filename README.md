@@ -1,5 +1,7 @@
 # Prize Savings: no-loss prize savings on Hedera
 
+[![CI](https://github.com/nickthelegend/scaffold-hbar-prize-savings/actions/workflows/ci.yaml/badge.svg)](https://github.com/nickthelegend/scaffold-hbar-prize-savings/actions/workflows/ci.yaml): every push plays a full round (deposit → frozen HTS tickets → network-executed scheduled draw → PRNG winner → withdraw) on a real Hedera network.
+
 Deposit HBAR, never lose it, and win the yield it earns. Every round, the pool's **native staking rewards** (plus any
 sponsor boosts) go to one depositor, picked by **Hedera's PRNG** in a draw that the contract **schedules for itself**
 with the **Hedera Schedule Service**. Deposits are mirrored as **non-transferable HTS tickets**.
