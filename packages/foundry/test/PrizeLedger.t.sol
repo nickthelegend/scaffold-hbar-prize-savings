@@ -167,6 +167,15 @@ contract PrizeLedgerTest is Test {
         assertEq(ledger.projectedWeight(alice), 0);
     }
 
+    /// Between `roundEnd` and the draw, a partial withdrawal keeps the weight already earned for the whole round: the
+    /// round is over, so the saver held that balance for all of it.
+    function test_weight_partialWithdrawAfterRoundEndKeepsEarnedWeight() public {
+        ledger.credit(alice, 10 * HBAR);
+        vm.warp(ledger.roundEnd() + 30);
+        ledger.debit(alice, 6 * HBAR);
+        assertEq(ledger.projectedWeight(alice), 10 * HBAR * ROUND);
+    }
+
     function test_weight_carriesFullyIntoNextRound() public {
         ledger.credit(alice, 10 * HBAR);
         vm.warp(block.timestamp + ROUND / 2);
@@ -227,5 +236,39 @@ contract PrizeLedgerTest is Test {
         address winner = ledger.pick(random);
         assertTrue(winner == alice || winner == bob);
         assertGt(ledger.projectedWeight(winner), 0);
+    }
+}
+
+/// Bounds the part of `PrizePool.draw` that grows with the number of savers, so `DRAW_GAS_LIMIT` can be sized as
+/// (draw gas measured end to end with two savers) + (this scan at `maxParticipants`) + margin. See README "Costs".
+contract PrizeLedgerScanGasTest is Test {
+    uint256 internal constant MAX_PARTICIPANTS = 100;
+    /// Budget for weighing and picking among 100 savers. Raise DRAW_GAS_LIMIT if this has to grow.
+    uint256 internal constant SCAN_GAS_BUDGET = 1_000_000;
+
+    PrizeLedgerHarness internal ledger;
+
+    function setUp() public {
+        ledger = new PrizeLedgerHarness(MAX_PARTICIPANTS);
+        ledger.openRound(1, 1 days);
+        for (uint256 i; i < MAX_PARTICIPANTS; ++i) {
+            ledger.credit(address(uint160(0x5AFE00 + i)), 1e9 + i);
+            vm.warp(block.timestamp + 60);
+        }
+        // Touch half the savers again this round so both weight branches are measured.
+        for (uint256 i; i < MAX_PARTICIPANTS; i += 2) {
+            ledger.credit(address(uint160(0x5AFE00 + i)), 1e8);
+        }
+    }
+
+    function test_scanAtMaxParticipantsFitsBudget() public {
+        uint256 start = gasleft();
+        // The last slice is the worst case: the walk visits every participant.
+        address winner = ledger.pick(type(uint256).max - 1);
+        uint256 used = start - gasleft();
+
+        assertTrue(winner != address(0));
+        assertLt(used, SCAN_GAS_BUDGET, "participant scan outgrew its budget");
+        emit log_named_uint("gas: weigh + pick among 100 savers", used);
     }
 }

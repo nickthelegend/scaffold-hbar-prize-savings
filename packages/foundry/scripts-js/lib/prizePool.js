@@ -29,12 +29,36 @@ export function prizePoolConfig(overrides = {}) {
     roundSeconds: int("ROUND_SECONDS", 86_400),
     drawGraceSeconds: int("DRAW_GRACE_SECONDS", 600),
     keeperBuffer: hbar("KEEPER_BUFFER_HBAR", 5),
-    minDeposit: hbar("MIN_DEPOSIT_HBAR", 1),
+    minDeposit: hbar("MIN_DEPOSIT_HBAR", 10),
     maxParticipants: int("MAX_PARTICIPANTS", 100),
     drawGasLimit: int("DRAW_GAS_LIMIT", 3_000_000),
     ticketFeeHbar: Number(env.TICKET_FEE_HBAR ?? 15),
     keeperSeedHbar: Number(env.KEEPER_SEED_HBAR ?? 10),
   };
+}
+
+/**
+ * Most a scheduled draw can cost the pool, in tinybars: the full gas limit at the network gas price. Hedera charges at
+ * least 80% of the limit, and the payer must cover all of it up front.
+ */
+export function maxDrawFee(config, gasPriceTinybars) {
+  return config.drawGasLimit * gasPriceTinybars;
+}
+
+/** Network gas price in tinybars. The JSON-RPC relay reports weibars (1 tinybar = 1e10 weibar). */
+export async function gasPriceTinybars(rpcUrl) {
+  const res = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "eth_gasPrice",
+      params: [],
+    }),
+  });
+  const { result } = await res.json();
+  return BigInt(result) / 10_000_000_000n;
 }
 
 /**
@@ -82,7 +106,7 @@ export async function deployPrizePool({
     .execute(client);
   await init.getReceipt(client);
   log(
-    `   ✅ ticket token created, first draw scheduled (${init.transactionId})`
+    `   ✅ ticket token created, round 1 open; its draw is scheduled once someone deposits (${init.transactionId})`
   );
 
   if (config.keeperSeedHbar > 0) {
@@ -94,7 +118,7 @@ export async function deployPrizePool({
       .execute(client);
     await seed.getReceipt(client);
     log(
-      `   ✅ seeded ${config.keeperSeedHbar} HBAR for schedule fees (${seed.transactionId})`
+      `   ✅ seeded ${config.keeperSeedHbar} HBAR towards the schedule-fee reserve (${seed.transactionId})`
     );
   }
 
