@@ -55,6 +55,20 @@ const INSUFFICIENT_RESERVE = 1;
 /** Hedera response code for a transfer to an account that is not associated with the token. */
 const TOKEN_NOT_ASSOCIATED_TO_ACCOUNT = 184;
 
+/**
+ * The frontend's gas limits (packages/nextjs/utils/prize-savings/gas.ts). Every call below uses them, so the suite
+ * proves they suffice on a real network. Keep the two in sync.
+ */
+const GAS = {
+  depositHolder: 200_000,
+  depositNewSaver: 1_100_000,
+  scheduling: 1_800_000,
+  withdraw: 200_000,
+  boostPrize: 100_000,
+  triggerDraw: 1_900_000,
+  associate: 900_000,
+};
+
 /** Gas used per entry point, printed after the suite. */
 const gasUsed = {};
 
@@ -108,6 +122,7 @@ async function poolEvents(contractId, iface) {
         {
           ...iface.parseLog({ topics: log.topics, data: log.data }),
           timestamp: log.timestamp,
+          transactionHash: log.transaction_hash,
         },
       ];
     } catch {
@@ -210,15 +225,13 @@ async function waitOnChain(client, nudge, predicate, { label, timeoutMs }) {
   );
 }
 
-/** The contract result of the latest `draw` the network executed for `contractId`. */
-async function latestDrawResult(contractId, selector) {
-  const res = await mirrorGet(
-    network,
-    `/contracts/${contractId}/results?order=desc&limit=25`
+/** The contract result (and system-call gas) of the transaction that emitted `event`. */
+async function resultOf(event) {
+  const result = await waitFor(
+    () => mirrorGet(network, `/contracts/results/${event.transactionHash}`),
+    { label: "contract result" }
   );
-  return (res?.results ?? []).find((r) =>
-    r.function_parameters?.startsWith(selector)
-  );
+  return { ...result, systemCalls: await systemCallGas(event.transactionHash) };
 }
 
 async function explainStall(contractId) {
@@ -289,9 +302,8 @@ describe(
       const config = prizePoolConfig({
         ROUND_SECONDS,
         DRAW_GRACE_SECONDS: 20,
-        KEEPER_BUFFER_HBAR: 10,
-        KEEPER_SEED_HBAR: 11,
-        DRAW_GAS_LIMIT: 6_000_000,
+        KEEPER_BUFFER_HBAR: 6,
+        KEEPER_SEED_HBAR: 7,
       });
       let deployment;
       let pool;
@@ -362,7 +374,7 @@ describe(
         await send("deposit (first saver, schedules the draw)", () =>
           pool.connect(alice.wallet).deposit({
             value: DEPOSIT * WEIBARS_PER_TINYBAR,
-            gasLimit: 8_000_000,
+            gasLimit: GAS.depositNewSaver + GAS.scheduling,
           })
         );
         drawRound = (await pool.currentRound()).toNumber();
@@ -378,13 +390,13 @@ describe(
         await send("deposit (new saver)", () =>
           pool.connect(bob.wallet).deposit({
             value: DEPOSIT * WEIBARS_PER_TINYBAR,
-            gasLimit: 1_500_000,
+            gasLimit: GAS.depositNewSaver,
           })
         );
         await send("deposit (existing saver top-up)", () =>
           pool.connect(bob.wallet).deposit({
             value: DEPOSIT * WEIBARS_PER_TINYBAR,
-            gasLimit: 1_500_000,
+            gasLimit: GAS.depositHolder,
           })
         );
         assert.equal(
@@ -413,7 +425,7 @@ describe(
         await send("boostPrize (draw already scheduled)", () =>
           pool.connect(alice.wallet).boostPrize({
             value: BOOST * WEIBARS_PER_TINYBAR,
-            gasLimit: 400_000,
+            gasLimit: GAS.boostPrize,
           })
         );
         const balance = await balanceOf(provider, deployment.address);
@@ -511,14 +523,22 @@ describe(
           "prize never exceeds the surplus above the reserve"
         );
 
-        const result = await waitFor(
-          () =>
-            latestDrawResult(deployment.contractId, iface.getSighash("draw")),
-          { label: "draw contract result" }
-        );
+        const result = await resultOf(draw);
         gasUsed["draw (scheduled, 2 savers)"] = result.gas_used;
         gasUsed["draw (scheduled, 2 savers): system calls"] =
-          await systemCallGas(result.hash);
+          result.systemCalls;
+        // The payer is charged gas limit × gas price before the call runs (the unused part is refunded after), so
+        // inside the draw that much is missing from the balance and the prize is smaller by exactly that amount. The
+        // refund lands after the draw and becomes part of the next prize.
+        if (network.name === "local") {
+          assert.equal(
+            prize,
+            balanceBeforeDraw -
+              principalBefore -
+              config.keeperBuffer -
+              config.drawGasLimit * gasPrice
+          );
+        }
         console.log(
           `scheduled draw: from ${result.from}, gas ${result.gas_used}/${result.gas_limit}, pool paid ${fee} tinybars, ` +
             `prize ${prize} (surplus above reserve before the draw ${
@@ -544,7 +564,7 @@ describe(
             await send(label, () =>
               pool
                 .connect(saver.wallet)
-                .withdraw(amount, { gasLimit: 1_500_000 })
+                .withdraw(amount, { gasLimit: GAS.withdraw })
             );
             const poolAfter = await balanceOf(provider, deployment.address);
             // A local node pays no staking rewards, so the pool's balance moves by exactly the amount withdrawn.
@@ -661,7 +681,7 @@ describe(
           () =>
             pool.connect(carol.wallet).deposit({
               value: DEPOSIT * WEIBARS_PER_TINYBAR,
-              gasLimit: 1_500_000,
+              gasLimit: GAS.depositNewSaver,
             })
         );
         assert.equal(refused.name, "HtsCallFailed");
@@ -673,12 +693,12 @@ describe(
           carol.wallet
         );
         await send("ticket.associate() (HIP-719)", () =>
-          ticket.associate({ gasLimit: 1_000_000 })
+          ticket.associate({ gasLimit: GAS.associate })
         );
         await send("deposit (first saver, reserve short)", () =>
           pool.connect(carol.wallet).deposit({
             value: DEPOSIT * WEIBARS_PER_TINYBAR,
-            gasLimit: 1_500_000,
+            gasLimit: GAS.depositNewSaver,
           })
         );
         assert.equal((await pool.participantsCount()).toNumber(), 1);
@@ -728,7 +748,7 @@ describe(
         await send("triggerDraw (schedules the draw)", () =>
           pool.connect(carol.wallet).triggerDraw({
             value: topUp * WEIBARS_PER_TINYBAR,
-            gasLimit: 8_000_000,
+            gasLimit: GAS.triggerDraw,
           })
         );
         assert.equal((await pool.scheduledRound()).toNumber(), round);
@@ -763,14 +783,9 @@ describe(
         );
         assert.equal(draw.args.winner, carol.wallet.address);
         assert.ok(draw.args.prize.toBigInt() > 0n);
-        const result = await waitFor(
-          () =>
-            latestDrawResult(deployment.contractId, iface.getSighash("draw")),
-          { label: "draw contract result" }
-        );
+        const result = await resultOf(draw);
         gasUsed["draw (scheduled, 1 saver)"] = result.gas_used;
-        gasUsed["draw (scheduled, 1 saver): system calls"] =
-          await systemCallGas(result.hash);
+        gasUsed["draw (scheduled, 1 saver): system calls"] = result.systemCalls;
         assert.equal(
           result.from.toLowerCase(),
           deployment.address.toLowerCase(),

@@ -126,8 +126,9 @@ contract PrizePool is ReentrancyGuard {
     }
 
     /// @notice Creates the ticket token and opens round 1. Its draw is scheduled once someone deposits.
-    /// @dev `msg.value` is forwarded to HTS for the token-creation fee (about $1 in HBAR). Whatever HTS does not
-    ///      charge comes back to this contract and counts as surplus (measured in `test/e2e`).
+    /// @dev `msg.value` is forwarded to HTS for the token-creation fee (about $1 in HBAR). None of it comes back to
+    ///      this contract (measured in `test/e2e`), so send little more than the fee; the fee reserve is funded
+    ///      separately with `boostPrize`.
     function initialize() external payable {
         if (msg.sender != deployer) revert NotDeployer();
         if (ticket != address(0)) revert AlreadyInitialized();

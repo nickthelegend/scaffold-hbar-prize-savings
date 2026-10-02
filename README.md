@@ -144,7 +144,8 @@ prize = address(this).balance − totalPrincipal − keeperBuffer
 
 ### The fee reserve
 
-A scheduled draw is paid for by the contract itself (Hedera charges at least 80% of `DRAW_GAS_LIMIT`). So that this
+A scheduled draw is paid for by the contract itself (gas limit × gas price is held up front; see
+[Costs](#costs-and-sizing)). So that this
 never touches principal, `_scheduleDraw` only creates a schedule when there are savers **and**
 `balance ≥ totalPrincipal + keeperBuffer`; otherwise it emits `DrawNotScheduled(round, reason)`. `keeperBuffer` must
 cover a draw's fee (the deploy script warns below two fees). Consequences:
@@ -238,21 +239,42 @@ All amounts are **tinybars** (see [gotchas](#hedera-gotchas-this-template-handle
 
 ## Costs and sizing
 
-| Item | Measured on a real network (gas price 89 tinybar/gas, HBAR ≈ $0.10) |
-|---|---|
-| Deploy (`ContractCreateFlow`) | ≈ 15–20 HBAR |
-| Ticket token creation (`initialize` value) | ≈ 10 HBAR ($1 HTS fee) |
-| Deposit or withdraw | ≈ 0.9M gas: HTS mint/transfer/freeze (or unfreeze/wipe) dominate, ≈ 0.8–1 HBAR in fees |
-| One scheduled draw | `DRAW_GAS_LIMIT` (default 3M) × ≥ 80% × gas price ≈ **2.1 HBAR**, paid by the pool from surplus |
-| Weight scan | ≈ 5.5k gas per saver on top of the HTS and HSS calls |
+Gas measured by `yarn foundry:test:e2e` on a Hiero Local Node (gas price 71 tinybar/gas there; the suite prints these
+numbers on every CI run). System-contract calls are priced from their HAPI fees, so they dominate:
 
-Hedera charges a contract call at least 80% of its gas limit, so `DRAW_GAS_LIMIT` is a cost knob as well as a safety
-knob. HTS system-contract calls are priced from their HAPI fees, which makes them far more expensive in gas than plain
-EVM storage. A draw that mints tickets for the winner, re-freezes them and schedules the next draw needs well over
-1M gas. The 3M default leaves room for 100 savers.
+| Call | Gas used | What costs |
+|---|---|---|
+| `scheduleCall` (HSS) | ≈ 1.41M | Constant, whatever the scheduled call's gas limit. `hasScheduleCapacity` ≈ 2.6k |
+| HTS transfer that auto-associates the ticket | ≈ 721k | A saver's first ticket. Every other HTS call (mint, transfer to an associated account, freeze, unfreeze, wipe) ≈ 15k |
+| `deposit`, existing saver | ≈ 143k | |
+| `deposit`, new saver | ≈ 879k | Includes the auto-association |
+| `deposit` that schedules the draw | ≈ 2.40M | First saver of a round: new saver + `scheduleCall` |
+| `withdraw` | ≈ 92k (full) – 129k (partial) | |
+| `boostPrize` | ≈ 30k | + ≈ 1.41M when it schedules the draw |
+| `triggerDraw` | ≈ 1.53M | |
+| `associate()` (HIP-719) | ≈ 729k | Only for accounts without unlimited auto-association |
+| Scheduled `draw` | ≈ 1.5M with 2 savers | 4 HTS calls, PRNG, `scheduleCall` for the next round, plus the saver scan |
+| Saver scan in `draw` | ≈ 0.87M at 100 savers | `PrizeLedgerScanGasTest` bounds it |
 
-**Round length.** Staking rewards arrive once per 24-hour period, so rounds shorter than a day mostly roll over and
-spend fees. The default is 24 hours; the public testnet demo uses shorter rounds so visitors can watch draws happen.
+**`DRAW_GAS_LIMIT` (default 3M)** = a 2-saver draw (≈ 1.5M) + the 100-saver scan (≈ 0.87M) + ~25% margin. If you raise
+`MAX_PARTICIPANTS`, raise it by ≈ 9k gas per extra saver. It is immutable, and a draw that runs out of gas waits for
+`triggerDraw`.
+
+**Who pays.** The scheduled draw is paid by the pool: the payer is charged gas limit × gas price up front and refunded
+what the call did not use. Inside `draw` the up-front charge is already missing from the balance, so the prize is
+smaller by exactly that amount and the refund becomes part of the next prize (the e2e suite asserts this). On the
+local node a 6M-gas draw cost the pool a net 1.14 HBAR. Scheduling done by a deposit, boost or `triggerDraw` is paid
+by that transaction's sender, which is why the frontend gives those calls extra gas only when they will schedule
+(`utils/prize-savings/gas.ts`).
+
+**Fee reserve.** `KEEPER_BUFFER_HBAR` (default 5) must cover the up-front charge of a draw, `DRAW_GAS_LIMIT` × gas
+price (≈ 2.1 HBAR at 3M and 71 tinybar/gas); the deploy script warns below twice that.
+
+**Deployment.** `ContractCreateFlow` ≈ 3.7M gas. `initialize` ≈ 259k gas plus `TICKET_FEE_HBAR` (default 15) for the
+HTS token-creation fee (about $1); none of that value comes back to the pool, so it is not part of the reserve.
+
+**Round length.** Staking rewards accrue per 24-hour period, so rounds shorter than a day mostly roll over and spend
+fees. The default is 24 hours; the public testnet demo uses shorter rounds so visitors can watch draws happen.
 Testnet pays about 0.19% a year in staking rewards (`/api/v1/network/stake`), so testnet prizes come mostly from
 boosts. Mainnet rates are higher.
 
@@ -341,8 +363,8 @@ CI runs the unit tests, lint, types and build on every push, then the end-to-end
 | `KEEPER_BUFFER_HBAR` | deploy env | `5` | Fee reserve above principal; a draw is only scheduled while the balance covers it. Keep ≥ 2 draw fees |
 | `MIN_DEPOSIT_HBAR` | deploy env | `10` | Minimum deposit; sets the cost of filling every participant slot |
 | `MAX_PARTICIPANTS` | deploy env | `100` | Cap that bounds draw gas |
-| `DRAW_GAS_LIMIT` | deploy env | `3000000` | Gas for each scheduled draw |
-| `TICKET_FEE_HBAR` | deploy env | `15` | Value sent to `initialize` for the HTS creation fee |
+| `DRAW_GAS_LIMIT` | deploy env | `3000000` | Gas for each scheduled draw; sized for 100 savers (see Costs) |
+| `TICKET_FEE_HBAR` | deploy env | `15` | Value sent to `initialize` for the HTS creation fee (not returned to the pool) |
 | `KEEPER_SEED_HBAR` | deploy env | `10` | Initial boost that funds the fee reserve (must be ≥ `KEEPER_BUFFER_HBAR` minus what `initialize` leaves, or the first draw waits for a boost) |
 | `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL` | `packages/nextjs/.env.local` | Hashio | JSON-RPC endpoint |
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | `packages/nextjs/.env.local` | demo id | WalletConnect |
@@ -372,8 +394,8 @@ No secret is read by the frontend. Never commit `.env` files; they are git-ignor
 9. **Savers need an association, or unlimited slots.** The mirror node reports an account's auto-association limit but
    not how many slots are used, so the UI only skips `associate()` for unlimited (-1) accounts.
 10. **Gas estimates for HTS-heavy calls.** The frontend sends explicit gas limits sized from the end-to-end
-    measurements (`utils/prize-savings/gas.ts`); Hedera bills at least 80% of the limit, so they carry ~25% margin,
-    not more.
+    measurements (`utils/prize-savings/gas.ts`) with ~25% margin, and add the ≈ 1.41M for `scheduleCall` only when
+    the call will schedule the draw, since Hedera can bill a large share of an unused limit.
 11. **Fork tests can't exercise Hedera services.** A Foundry fork runs in a local EVM, where `0x167`, `0x16b` and
     `0x169` don't exist, and Hashio returns runtime bytecode with immutables zeroed. This template tests Hedera
     behaviour on a real network (local node or testnet) instead.

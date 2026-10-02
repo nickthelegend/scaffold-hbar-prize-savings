@@ -7,7 +7,7 @@ import { usePoolState } from "~~/hooks/prize-savings/usePoolState";
 import { usePosition } from "~~/hooks/prize-savings/usePosition";
 import { useTicketAssociation } from "~~/hooks/prize-savings/useTicketAssociation";
 import { useScaffoldWriteContract, useTransactor } from "~~/hooks/scaffold-hbar";
-import { GAS } from "~~/utils/prize-savings/gas";
+import { GAS, boostGas, depositGas, willScheduleDraw } from "~~/utils/prize-savings/gas";
 import { formatTinybars, hbarToTinybars, hbarToWeibars, isValidHbarAmount } from "~~/utils/prize-savings/units";
 
 type Mode = "deposit" | "withdraw" | "boost";
@@ -29,7 +29,8 @@ const MODES: { id: Mode; label: string; help: string }[] = [
 /** Deposit, withdraw and boost forms. Handles the Hedera-specific unit conversion and token association. */
 export const SavePanel = () => {
   const { address } = useAccount();
-  const { ticket, minDeposit } = usePoolState();
+  const pool = usePoolState();
+  const { ticket, minDeposit } = pool;
   const { balance } = usePosition(address);
   const [awaitingAssociation, setAwaitingAssociation] = useState(false);
   const association = useTicketAssociation(address, ticket, { pollFast: awaitingAssociation });
@@ -62,10 +63,12 @@ export const SavePanel = () => {
     if (!valid || error) return;
     try {
       // Wallets send `value` in weibars (18 decimals); the contract receives tinybars (8 decimals).
-      if (mode === "deposit")
-        await writeContractAsync({ functionName: "deposit", value: hbarToWeibars(amount), gas: GAS.deposit });
+      if (mode === "deposit") {
+        const gas = depositGas(balance !== undefined && balance > 0n, willScheduleDraw(pool));
+        await writeContractAsync({ functionName: "deposit", value: hbarToWeibars(amount), gas });
+      }
       if (mode === "boost")
-        await writeContractAsync({ functionName: "boostPrize", value: hbarToWeibars(amount), gas: GAS.boostPrize });
+        await writeContractAsync({ functionName: "boostPrize", value: hbarToWeibars(amount), gas: boostGas(pool) });
       if (mode === "withdraw")
         await writeContractAsync({ functionName: "withdraw", args: [tinybars], gas: GAS.withdraw });
       setAmount("");

@@ -76,10 +76,12 @@ change accounting, extend those tests rather than weakening them.
   (-1) accounts skip it.
 - **Staking elections** can only be set at creation through HAPI. Keep deployments in `deployPrizePool.js`.
 - **HSS:** check `hasScheduleCapacity` before `scheduleCall`; scheduled calls are paid from the contract's balance and
-  charged ≥ 80% of the gas limit, so keep `drawGasLimit` tight and the participant scan bounded
-  (`PrizeLedgerScanGasTest` bounds it at 100 savers). `keeperBuffer` must cover at least one draw fee (two is the
-  default advice). HTS calls cost hundreds of thousands of gas each on a real network; `yarn foundry:test:e2e` prints
-  gas per entry point, and the frontend limits in `utils/prize-savings/gas.ts` come from it.
+  charged gas limit × gas price up front (unused gas is refunded after), so keep `drawGasLimit` tight and the
+  participant scan bounded (`PrizeLedgerScanGasTest` bounds it at 100 savers). `scheduleCall` itself costs ≈ 1.41M
+  gas, paid by whichever transaction schedules. `keeperBuffer` must cover at least one draw's up-front charge (two
+  is the default advice). A saver's first HTS transfer (auto-association) costs ≈ 721k, other HTS calls ≈ 15k;
+  `yarn foundry:test:e2e` prints gas per entry point, and the frontend limits in `utils/prize-savings/gas.ts` (which
+  the e2e suite also sends) come from it.
 - **Mirror node:** `/contracts/{id}/results/logs` needs a timestamp range when filtering by topic; `fetchContractEvents`
   walks `links.next` and filters by event name instead.
 

@@ -38,8 +38,8 @@ export function prizePoolConfig(overrides = {}) {
 }
 
 /**
- * Most a scheduled draw can cost the pool, in tinybars: the full gas limit at the network gas price. Hedera charges at
- * least 80% of the limit, and the payer must cover all of it up front.
+ * Most a scheduled draw can cost the pool, in tinybars: the full gas limit at the network gas price, which the payer
+ * is charged up front (unused gas is refunded after the call).
  */
 export function maxDrawFee(config, gasPriceTinybars) {
   return config.drawGasLimit * gasPriceTinybars;
