@@ -314,8 +314,11 @@ No secret is read by the frontend. Never commit `.env` files; they are git-ignor
 4. **Wiping frozen holdings fails** (`ACCOUNT_FROZEN_FOR_TOKEN`), so `withdraw` unfreezes, wipes and refreezes.
 5. **Scheduled-call capacity is per second.** `_scheduleDraw` checks `hasScheduleCapacity` and tries the next few
    seconds before giving up gracefully.
-6. **Mirror-node topic filters need a timestamp range.** The UI fetches recent logs and decodes them with the ABI.
-7. **Fork tests can't exercise Hedera services.** A Foundry fork runs in a local EVM, where `0x167`, `0x16b` and `0x169`
+6. **Scheduled calls run when the network is busy.** A long-term schedule executes when a transaction reaches
+   consensus at or after its expiry second. That's instant on testnet and mainnet. On an idle local node the e2e
+   suite sends a 1-tinybar heartbeat transfer while it waits.
+7. **Mirror-node topic filters need a timestamp range.** The UI fetches recent logs and decodes them with the ABI.
+8. **Fork tests can't exercise Hedera services.** A Foundry fork runs in a local EVM, where `0x167`, `0x16b` and `0x169`
    don't exist, and Hashio returns runtime bytecode with immutables zeroed. This template tests Hedera behaviour on a
    real network (local node or testnet) instead.
 

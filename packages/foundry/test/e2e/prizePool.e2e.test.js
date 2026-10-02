@@ -14,6 +14,7 @@ import {
   ContractExecuteTransaction,
   Hbar,
   PrivateKey,
+  TransferTransaction,
 } from "@hiero-ledger/sdk";
 import { ethers } from "ethers";
 import assert from "node:assert/strict";
@@ -99,6 +100,34 @@ async function poolEvents(contractId, iface) {
 
 const entityId = (address) => `0.0.${BigInt(address).toString()}`;
 
+/**
+ * A contract created without an admin key is immutable; the mirror node reports its admin key as a protobuf `Key`
+ * holding the contract's own id (field 1 → ContractID, field 3 = contract number). Returns that number, or null.
+ */
+function selfKeyContractNum(adminKey) {
+  if (!adminKey) return null;
+  const bytes = Buffer.from(adminKey.key, "hex");
+  if (bytes[0] !== 0x0a || bytes[2] !== 0x18) return null;
+  let num = 0n;
+  for (let i = 3, shift = 0n; i < bytes.length; i++, shift += 7n) {
+    num |= BigInt(bytes[i] & 0x7f) << shift;
+    if ((bytes[i] & 0x80) === 0) break;
+  }
+  return num;
+}
+
+/**
+ * Long-term schedules execute when the network handles a transaction at or after their expiry second. Public
+ * networks always have traffic; an idle local node needs a nudge, so this sends a 1-tinybar transfer.
+ */
+async function heartbeat(client, to) {
+  const tx = await new TransferTransaction()
+    .addHbarTransfer(client.operatorAccountId, Hbar.fromTinybars(-1))
+    .addHbarTransfer(to, Hbar.fromTinybars(1))
+    .execute(client);
+  await tx.getReceipt(client);
+}
+
 describe(
   `PrizePool end-to-end on Hedera ${network.name}`,
   { timeout: 600_000 },
@@ -154,7 +183,12 @@ describe(
         network,
         `/contracts/${deployment.contractId}`
       );
-      assert.equal(contract.admin_key, null);
+      const selfKey = selfKeyContractNum(contract.admin_key);
+      assert.ok(
+        contract.admin_key === null ||
+          selfKey === BigInt(deployment.contractId.num.toString()),
+        "no admin key: the contract is immutable"
+      );
     });
 
     it("schedules its first draw through HSS at initialize", async () => {
@@ -219,11 +253,18 @@ describe(
       assert.ok(prizeBefore > 0n, "boost creates a prize");
 
       const firstSchedule = await pool.nextDrawSchedule();
-      await waitFor(async () => (await pool.currentRound()).toNumber() >= 2, {
-        timeoutMs: (ROUND_SECONDS + 90) * 1000,
-        intervalMs: 3_000,
-        label: "the network to execute the scheduled draw",
-      });
+      await waitFor(
+        async () => {
+          if ((await pool.currentRound()).toNumber() >= 2) return true;
+          await heartbeat(client, alice.accountId);
+          return false;
+        },
+        {
+          timeoutMs: (ROUND_SECONDS + 90) * 1000,
+          intervalMs: 3_000,
+          label: "the network to execute the scheduled draw",
+        }
+      );
 
       const executed = await waitFor(
         async () =>
