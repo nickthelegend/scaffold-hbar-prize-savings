@@ -120,6 +120,27 @@ function selfKeyContractNum(adminKey) {
  * Long-term schedules execute when the network handles a transaction at or after their expiry second. Public
  * networks always have traffic; an idle local node needs a nudge, so this sends a 1-tinybar transfer.
  */
+async function explainStall(contractId, scheduleAddress) {
+  const schedule = await mirrorGet(
+    network,
+    `/schedules/${entityId(scheduleAddress)}`
+  );
+  const results = await mirrorGet(
+    network,
+    `/contracts/${contractId}/results?order=desc&limit=5`
+  );
+  const calls = (results?.results ?? []).map((r) => ({
+    at: r.timestamp,
+    from: r.from,
+    selector: r.function_parameters?.slice(0, 10),
+    result: r.result,
+    error: r.error_message,
+    gasUsed: r.gas_used,
+    gasLimit: r.gas_limit,
+  }));
+  return JSON.stringify({ schedule, recentCalls: calls }, null, 2);
+}
+
 async function heartbeat(client, to) {
   const tx = await new TransferTransaction()
     .addHbarTransfer(client.operatorAccountId, Hbar.fromTinybars(-1))
@@ -253,18 +274,31 @@ describe(
       assert.ok(prizeBefore > 0n, "boost creates a prize");
 
       const firstSchedule = await pool.nextDrawSchedule();
-      await waitFor(
-        async () => {
-          if ((await pool.currentRound()).toNumber() >= 2) return true;
-          await heartbeat(client, alice.accountId);
-          return false;
-        },
-        {
-          timeoutMs: (ROUND_SECONDS + 90) * 1000,
-          intervalMs: 3_000,
-          label: "the network to execute the scheduled draw",
-        }
+      const roundEnd = (await pool.roundEnd()).toNumber();
+      console.log(
+        `round ends at ${roundEnd}, draw scheduled as ${entityId(
+          firstSchedule
+        )}`
       );
+      try {
+        await waitFor(
+          async () => {
+            if ((await pool.currentRound()).toNumber() >= 2) return true;
+            await heartbeat(client, alice.accountId);
+            return false;
+          },
+          {
+            timeoutMs: (ROUND_SECONDS + 90) * 1000,
+            intervalMs: 3_000,
+            label: "the network to execute the scheduled draw",
+          }
+        );
+      } catch (error) {
+        console.error(
+          await explainStall(deployment.contractId.toString(), firstSchedule)
+        );
+        throw error;
+      }
 
       const executed = await waitFor(
         async () =>
