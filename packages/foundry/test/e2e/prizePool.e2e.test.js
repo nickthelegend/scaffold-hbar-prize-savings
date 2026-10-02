@@ -281,9 +281,17 @@ describe(
     before(async () => {
       const operator = operatorFromEnv();
       client = network.client().setOperator(operator.id, operator.key);
-      provider = new ethers.providers.JsonRpcProvider(network.rpc);
-      gasPrice =
-        (await provider.getGasPrice()).toBigInt() / WEIBARS_PER_TINYBAR;
+      // Static network: no chain-id detection call that could fail once and stay failed.
+      provider = new ethers.providers.StaticJsonRpcProvider(network.rpc, {
+        chainId: network.chainId,
+        name: network.name,
+      });
+      // A freshly started local node can accept SDK transactions before its JSON-RPC relay answers.
+      const weibars = await waitFor(
+        () => provider.getGasPrice().catch(() => undefined),
+        { timeoutMs: 180_000, intervalMs: 5_000, label: "the JSON-RPC relay" }
+      );
+      gasPrice = weibars.toBigInt() / WEIBARS_PER_TINYBAR;
     });
 
     after(() => {
