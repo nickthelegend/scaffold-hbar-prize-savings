@@ -20,10 +20,15 @@ export const DrawHistory = () => {
         <h2 className="card-title m-0 text-lg">Past draws</h2>
         {isLoading ? (
           <div className="h-40 rounded-xl bg-base-200 animate-pulse" aria-label="Loading draws" />
-        ) : error ? (
-          <p className="m-0 text-sm text-error">Could not load draws from the mirror node. Retrying…</p>
-        ) : !draws?.length ? (
-          <p className="m-0 text-sm text-base-content/70">No draws yet. The first one runs when round 1 ends.</p>
+        ) : !draws ? (
+          // Only when nothing has loaded yet: a failed background refetch keeps showing the last good data.
+          <p className={`m-0 text-sm ${error ? "text-error" : "text-base-content/70"}`}>
+            {error ? "Could not load draws from the mirror node. Retrying…" : "Loading draws…"}
+          </p>
+        ) : !draws.length ? (
+          <p className="m-0 text-sm text-base-content/70">
+            No draws yet. The first one runs after the first round ends.
+          </p>
         ) : (
           <>
             <PrizeChart draws={draws.slice(0, CHART_ROUNDS).reverse()} />

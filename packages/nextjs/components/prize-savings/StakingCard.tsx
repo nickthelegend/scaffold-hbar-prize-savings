@@ -50,16 +50,18 @@ export const StakingCard = () => {
             </span>
           </li>
           <li className="flex justify-between gap-4">
-            <span className="text-base-content/70">Kept for schedule fees</span>
+            <span className="text-base-content/70">Fee reserve for scheduled draws</span>
             <span className="tabular-nums">
               {keeperBuffer === undefined ? "…" : `${formatTinybars(keeperBuffer)} HBAR`}
             </span>
           </li>
         </ul>
         <p className="m-0 text-xs text-base-content/60">
-          All deposits stay in the pool contract as HBAR, staked to a consensus node. The network pays staking rewards
-          once per 24-hour period into the contract&apos;s balance; together with boosts they form the prize. A deposit
-          only ever leaves the contract back to the saver who made it.
+          All deposits stay in the pool contract as HBAR, staked to a consensus node. Rewards accrue per 24-hour staking
+          period but are only paid into the contract&apos;s balance the next time a transaction touches it (a deposit,
+          withdrawal or draw), after that transaction runs. Until then they show as pending here and are not part of the
+          prize, so in a quiet pool they reach the prize a round late. The fee reserve pays for the scheduled draws.
+          Principal is reserved: it only ever leaves the contract back to the saver who deposited it.
         </p>
       </div>
     </div>

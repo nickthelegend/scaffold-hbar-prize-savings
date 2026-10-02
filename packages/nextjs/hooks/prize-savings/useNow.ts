@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-/** Seconds remaining until `targetSeconds` (unix), ticking every second. Negative once the target has passed. */
-export const useCountdown = (targetSeconds?: bigint) => {
+/** Current unix time in seconds, ticking every second. */
+export const useNow = () => {
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
 
   useEffect(() => {
@@ -9,7 +9,7 @@ export const useCountdown = (targetSeconds?: bigint) => {
     return () => clearInterval(id);
   }, []);
 
-  return targetSeconds === undefined ? undefined : Number(targetSeconds) - now;
+  return now;
 };
 
 export const formatDuration = (totalSeconds: number) => {

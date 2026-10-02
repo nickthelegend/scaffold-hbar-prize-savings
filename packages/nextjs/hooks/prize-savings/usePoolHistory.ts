@@ -23,7 +23,10 @@ export const usePoolHistory = () => {
     enabled: Boolean(pool),
     refetchInterval: 15_000,
     queryFn: async (): Promise<DrawRecord[]> => {
-      const events = await fetchContractEvents(network, pool!.address, pool!.abi);
+      const events = await fetchContractEvents(network, pool!.address, pool!.abi, {
+        eventNames: ["DrawExecuted", "RoundRolledOver"],
+        maxEvents: 50,
+      });
       return events.flatMap(({ eventName, args, timestamp, transactionHash }): DrawRecord[] => {
         if (eventName === "DrawExecuted") {
           return [

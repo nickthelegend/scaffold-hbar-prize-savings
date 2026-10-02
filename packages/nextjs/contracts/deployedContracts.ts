@@ -116,7 +116,13 @@ const deployedContracts = {
         {
           type: "function",
           name: "draw",
-          inputs: [],
+          inputs: [
+            {
+              name: "round",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
           outputs: [],
           stateMutability: "nonpayable",
         },
@@ -140,6 +146,19 @@ const deployedContracts = {
           outputs: [
             {
               name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "drawOpensAt",
+          inputs: [],
+          outputs: [
+            {
+              name: "opensAt",
               type: "uint256",
               internalType: "uint256",
             },
@@ -270,6 +289,19 @@ const deployedContracts = {
         },
         {
           type: "function",
+          name: "reserveShortfall",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
           name: "roundDuration",
           inputs: [],
           outputs: [
@@ -309,6 +341,32 @@ const deployedContracts = {
         },
         {
           type: "function",
+          name: "scheduledFor",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "scheduledRound",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "function",
           name: "ticket",
           inputs: [],
           outputs: [
@@ -332,6 +390,13 @@ const deployedContracts = {
             },
           ],
           stateMutability: "view",
+        },
+        {
+          type: "function",
+          name: "triggerDraw",
+          inputs: [],
+          outputs: [],
+          stateMutability: "payable",
         },
         {
           type: "function",
@@ -404,6 +469,25 @@ const deployedContracts = {
               type: "uint256",
               indexed: false,
               internalType: "uint256",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "DrawNotScheduled",
+          inputs: [
+            {
+              name: "round",
+              type: "uint256",
+              indexed: true,
+              internalType: "uint256",
+            },
+            {
+              name: "reason",
+              type: "uint8",
+              indexed: false,
+              internalType: "enum PrizePool.NotScheduledReason",
             },
           ],
           anonymous: false,
@@ -523,6 +607,31 @@ const deployedContracts = {
         },
         {
           type: "event",
+          name: "TicketSyncFailed",
+          inputs: [
+            {
+              name: "account",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "op",
+              type: "uint8",
+              indexed: false,
+              internalType: "enum PrizePool.TicketOp",
+            },
+            {
+              name: "responseCode",
+              type: "int64",
+              indexed: false,
+              internalType: "int64",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
           name: "Withdrawn",
           inputs: [
             {
@@ -550,6 +659,17 @@ const deployedContracts = {
           type: "error",
           name: "AlreadyInitialized",
           inputs: [],
+        },
+        {
+          type: "error",
+          name: "AmountTooLarge",
+          inputs: [
+            {
+              name: "amount",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
         },
         {
           type: "error",
@@ -602,7 +722,23 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "InsufficientReserve",
+          inputs: [
+            {
+              name: "shortfall",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+        },
+        {
+          type: "error",
           name: "InvalidConfig",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "NoParticipants",
           inputs: [],
         },
         {
@@ -617,8 +753,29 @@ const deployedContracts = {
         },
         {
           type: "error",
+          name: "OnlyScheduled",
+          inputs: [],
+        },
+        {
+          type: "error",
           name: "ReentrancyGuardReentrantCall",
           inputs: [],
+        },
+        {
+          type: "error",
+          name: "SchedulingFailed",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "StaleDraw",
+          inputs: [
+            {
+              name: "round",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
         },
         {
           type: "error",

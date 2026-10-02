@@ -1,6 +1,7 @@
 "use client";
 
 import { useAccount } from "wagmi";
+import { useNow } from "~~/hooks/prize-savings/useNow";
 import { usePoolState } from "~~/hooks/prize-savings/usePoolState";
 import { usePosition } from "~~/hooks/prize-savings/usePosition";
 import { formatShare, formatTinybars } from "~~/utils/prize-savings/units";
@@ -8,7 +9,9 @@ import { formatShare, formatTinybars } from "~~/utils/prize-savings/units";
 /** The connected saver's deposit and their chance of winning this round. */
 export const PositionCard = () => {
   const { address } = useAccount();
-  const { prize } = usePoolState();
+  const { prize, roundEnd } = usePoolState();
+  const now = useNow();
+  const roundOver = roundEnd !== undefined && now >= Number(roundEnd);
   const { balance, userWeight, totalWeight } = usePosition(address);
 
   return (
@@ -29,6 +32,8 @@ export const PositionCard = () => {
         )}
         <p className="m-0 text-xs text-base-content/60">
           Odds are time-weighted: HBAR held for the whole round counts fully, a deposit made halfway counts half.
+          {roundOver &&
+            " This round has ended: deposits made now count from the next round, and withdrawals keep the odds already earned."}{" "}
           Tickets are frozen in your account so they cannot be transferred; they are burned when you withdraw.
         </p>
       </div>

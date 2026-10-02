@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { HederaPortalFaucet } from "@scaffold-hbar-ui/components";
 import { useAccount, useWriteContract } from "wagmi";
 import { usePoolState } from "~~/hooks/prize-savings/usePoolState";
 import { usePosition } from "~~/hooks/prize-savings/usePosition";
 import { useTicketAssociation } from "~~/hooks/prize-savings/useTicketAssociation";
 import { useScaffoldWriteContract, useTransactor } from "~~/hooks/scaffold-hbar";
+import { GAS } from "~~/utils/prize-savings/gas";
 import { formatTinybars, hbarToTinybars, hbarToWeibars, isValidHbarAmount } from "~~/utils/prize-savings/units";
 
 type Mode = "deposit" | "withdraw" | "boost";
@@ -17,7 +18,7 @@ const HRC719_ABI = [
 
 const MODES: { id: Mode; label: string; help: string }[] = [
   { id: "deposit", label: "Deposit", help: "Your HBAR joins this round right away. Odds grow with time held." },
-  { id: "withdraw", label: "Withdraw", help: "Take back any part of your deposit, any time. No fees." },
+  { id: "withdraw", label: "Withdraw", help: "Take back any part of your deposit, any time. Only the network fee." },
   {
     id: "boost",
     label: "Boost prize",
@@ -30,13 +31,19 @@ export const SavePanel = () => {
   const { address } = useAccount();
   const { ticket, minDeposit } = usePoolState();
   const { balance } = usePosition(address);
-  const association = useTicketAssociation(address, ticket);
+  const [awaitingAssociation, setAwaitingAssociation] = useState(false);
+  const association = useTicketAssociation(address, ticket, { pollFast: awaitingAssociation });
   const [mode, setMode] = useState<Mode>("deposit");
   const [amount, setAmount] = useState("");
 
   const { writeContractAsync, isPending } = useScaffoldWriteContract({ contractName: "PrizePool" });
   const { writeContractAsync: writeToken, isPending: isAssociating } = useWriteContract();
   const transactor = useTransactor();
+
+  // Stop fast polling once the mirror node reports the association.
+  useEffect(() => {
+    if (awaitingAssociation && association.data && !association.data.needsAssociation) setAwaitingAssociation(false);
+  }, [awaitingAssociation, association.data]);
 
   const valid = isValidHbarAmount(amount);
   const tinybars = valid ? hbarToTinybars(amount) : 0n;
@@ -50,21 +57,36 @@ export const SavePanel = () => {
           ? `You have ${formatTinybars(balance)} HBAR deposited.`
           : undefined;
 
+  // Explicit gas limits: HTS-heavy calls are sized from measurements (see utils/prize-savings/gas.ts).
   const submit = async () => {
     if (!valid || error) return;
-    // Wallets send `value` in weibars (18 decimals); the contract receives tinybars (8 decimals).
-    if (mode === "deposit") await writeContractAsync({ functionName: "deposit", value: hbarToWeibars(amount) });
-    if (mode === "boost") await writeContractAsync({ functionName: "boostPrize", value: hbarToWeibars(amount) });
-    if (mode === "withdraw") await writeContractAsync({ functionName: "withdraw", args: [tinybars] });
-    setAmount("");
+    try {
+      // Wallets send `value` in weibars (18 decimals); the contract receives tinybars (8 decimals).
+      if (mode === "deposit")
+        await writeContractAsync({ functionName: "deposit", value: hbarToWeibars(amount), gas: GAS.deposit });
+      if (mode === "boost")
+        await writeContractAsync({ functionName: "boostPrize", value: hbarToWeibars(amount), gas: GAS.boostPrize });
+      if (mode === "withdraw")
+        await writeContractAsync({ functionName: "withdraw", args: [tinybars], gas: GAS.withdraw });
+      setAmount("");
+    } catch {
+      // useTransactor already showed the error (including a rejected signature).
+    }
   };
 
   const associate = async () => {
-    await transactor(() => writeToken({ address: ticket!, abi: HRC719_ABI, functionName: "associate" }));
-    await association.refetch();
+    try {
+      await transactor(() =>
+        writeToken({ address: ticket!, abi: HRC719_ABI, functionName: "associate", gas: GAS.associate }),
+      );
+      setAwaitingAssociation(true);
+    } catch {
+      // Notified by useTransactor.
+    }
   };
 
   const active = MODES.find(m => m.id === mode)!;
+  const checkingAssociation = mode === "deposit" && !association.data;
   const needsAssociation = mode === "deposit" && association.data?.needsAssociation;
 
   return (
@@ -111,14 +133,22 @@ export const SavePanel = () => {
 
         {!address ? (
           <p className="m-0 text-center text-sm text-base-content/70">Connect a wallet to start saving.</p>
+        ) : checkingAssociation ? (
+          <button className="btn btn-primary" disabled>
+            {association.isError ? "Could not reach the mirror node. Retrying…" : "Checking ticket association…"}
+          </button>
         ) : association.data && !association.data.accountExists ? (
           <div className="flex flex-col items-center gap-1 text-center text-sm">
             <p className="m-0">This address has no Hedera account yet. Fund it to create one:</p>
             <HederaPortalFaucet variant="link" label="portal.hedera.com/faucet" showIcon={false} />
           </div>
         ) : needsAssociation ? (
-          <button className="btn btn-secondary" disabled={isAssociating} onClick={associate}>
-            {isAssociating ? <span className="loading loading-spinner loading-sm" /> : "Associate ticket token (once)"}
+          <button className="btn btn-secondary" disabled={isAssociating || awaitingAssociation} onClick={associate}>
+            {isAssociating || awaitingAssociation ? (
+              <span className="loading loading-spinner loading-sm" />
+            ) : (
+              "Associate ticket token (once)"
+            )}
           </button>
         ) : (
           <button className="btn btn-primary" disabled={!valid || Boolean(error) || isPending} onClick={submit}>

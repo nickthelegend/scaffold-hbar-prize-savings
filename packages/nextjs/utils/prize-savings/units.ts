@@ -29,3 +29,6 @@ export const formatShare = (part: bigint, total: bigint) => {
   const basisPoints = Number((part * 10_000n) / total);
   return `${(basisPoints / 100).toFixed(basisPoints >= 1_000 ? 1 : 2)}%`;
 };
+
+/** Contract amount (tinybars) to the weibar `value` a wallet must send. */
+export const tinybarsToWeibars = (tinybars: bigint) => tinybars * 10_000_000_000n;

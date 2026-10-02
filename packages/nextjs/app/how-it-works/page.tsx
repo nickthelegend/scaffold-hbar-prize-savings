@@ -10,19 +10,19 @@ const SERVICES = [
   {
     name: "Native staking",
     where: "deployPrizePool.js → ContractCreateFlow.setStakedNodeId",
-    what: "The pool contract is created with a staking election, so every HBAR it holds earns network staking rewards. They land in the contract's balance once per 24-hour period, with no claim transaction.",
-    evm: "Lend the deposits to a protocol and inherit its risk (Bonzo Lend was drained and paused in July 2026).",
+    what: "The pool contract is created with a staking election, so every HBAR it holds earns network staking rewards. They accrue per 24-hour staking period and are paid into the contract's balance the next time a transaction touches it, with no claim call.",
+    evm: "Lend the deposits to a protocol and inherit its smart-contract and liquidity risk.",
   },
   {
     name: "Schedule Service (HSS, 0x16b)",
     where: "PrizePool._scheduleDraw",
-    what: "Each draw schedules the next one with scheduleCall. The network executes it at the round's end and the contract pays the fee from its surplus.",
+    what: "The contract schedules its own draw with scheduleCall, and each draw schedules the next. The network executes it at the round's end and the contract pays the fee from its fee reserve, never from principal. An empty or underfunded pool schedules nothing.",
     evm: "Run a keeper bot or pay an automation network.",
   },
   {
     name: "PRNG (0x169)",
     where: "PrizePool.draw",
-    what: "The winner comes from getPseudorandomSeed(), derived from the running hash of a recent transaction record.",
+    what: "The winner comes from getPseudorandomSeed(), derived from the running hash of a recent transaction record. draw() only runs as the contract's own scheduled transaction, so nobody can call it and revert until the seed favours them.",
     evm: "Subscribe to a VRF oracle and wait for an asynchronous callback.",
   },
   {
@@ -42,9 +42,9 @@ const SERVICES = [
 const STEPS = [
   "You deposit HBAR. The pool records your balance, mints the same amount of PST tickets into your account and freezes them.",
   "Your weight for the round grows every second: balance × seconds held. A deposit in the last minute barely counts, so nobody can snipe a draw.",
-  "Staking rewards and boosts accumulate above the principal. Everything above principal + a small fee buffer is the prize.",
-  "At the round's end the network runs the scheduled draw. The PRNG picks a point on the weight line; whoever's slice it lands in wins.",
-  "The prize is added to the winner's deposit (more tickets, better odds next round) and the next draw is scheduled. Anyone can withdraw principal at any time.",
+  "Staking rewards and boosts accumulate above the principal. Everything above principal + the fee reserve is the prize.",
+  "At the round's end the network runs the draw the contract scheduled for itself. The PRNG picks a point on the weight line; whoever's slice it lands in wins.",
+  "The prize is added to the winner's deposit (more tickets, better odds next round) and the next draw is scheduled if the reserve can pay for it. Anyone can withdraw principal at any time.",
 ];
 
 const HowItWorks: NextPage = () => (
@@ -52,8 +52,8 @@ const HowItWorks: NextPage = () => (
     <header className="flex flex-col gap-3">
       <h1 className="m-0 text-4xl font-bold">How Prize Savings works</h1>
       <p className="m-0 text-lg text-base-content/75">
-        A no-loss savings game: nobody can lose their deposit, and the yield it earns is paid out as one prize per
-        round. On Hedera every moving part is native to the network.
+        A no-loss savings game: deposits are reserved and never used for prizes or fees, and the yield they earn is paid
+        out as one prize per round. On Hedera every moving part is native to the network.
       </p>
     </header>
 
@@ -105,8 +105,14 @@ const HowItWorks: NextPage = () => (
           The contract has no owner and no admin key. Nobody can pause it, change its parameters or move deposits.
         </li>
         <li>
-          Principal is plain HBAR held by the contract, so it is not exposed to any lending or DEX protocol. The
-          invariant <code>balance ≥ totalPrincipal</code> is fuzz-tested.
+          Principal is plain HBAR held by the contract, so it is not exposed to any lending or DEX protocol. Draw fees
+          come from a reserve above principal: a draw is only scheduled while the balance covers principal plus that
+          reserve, and the end-to-end suite checks <code>balance ≥ totalPrincipal</code> after a real scheduled draw.
+        </li>
+        <li>
+          Tickets mirror deposits, but the contract&apos;s ledger is the source of truth: if a ticket operation fails
+          during a draw or withdrawal, the contract logs it and carries on, so a withdrawal never depends on the ticket
+          token.
         </li>
         <li>
           Testnet staking pays about 0.2% a year, so testnet prizes come mostly from boosts. On mainnet the reward rate
@@ -117,8 +123,14 @@ const HowItWorks: NextPage = () => (
           step or a VRF provider.
         </li>
         <li>
+          If a scheduled draw never runs, anyone can call <code>triggerDraw</code> after a grace period. It only
+          schedules a new draw a few seconds out (topping up the fee reserve if needed), so the caller cannot pick the
+          outcome.
+        </li>
+        <li>
           A draw scans every saver, so the pool caps participants (default 100) to keep the scheduled call within its
-          gas limit.
+          gas limit. The minimum deposit (default 10 HBAR) makes filling every slot with dust cost at least 1,000 HBAR,
+          all refundable, so the cap can still be griefed by a well-funded attacker.
         </li>
       </ul>
     </section>

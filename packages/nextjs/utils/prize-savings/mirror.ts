@@ -32,7 +32,7 @@ async function getJson<T>(url: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-type MirrorLog = {
+export type MirrorLog = {
   address: string;
   data: string;
   topics: string[];
@@ -48,19 +48,10 @@ export type DecodedPoolEvent = {
   transactionHash: string;
 };
 
-/**
- * Recent events of a contract, newest first, decoded with its ABI. The mirror node is the indexer: no subgraph or
- * backend needed. Topic filters require a timestamp range, so we fetch the latest page and decode client-side.
- */
-export async function fetchContractEvents(
-  network: HederaNetwork,
-  contract: string,
-  abi: Abi,
-  limit = 100,
-): Promise<DecodedPoolEvent[]> {
-  const { logs } = await getJson<{ logs: MirrorLog[] }>(
-    `${MIRROR_URLS[network]}/contracts/${contract}/results/logs?order=desc&limit=${limit}`,
-  );
+type LogsPage = { logs: MirrorLog[]; links?: { next: string | null } };
+
+/** Decodes mirror-node logs with `abi`, keeping their order and skipping logs the ABI does not describe. */
+export function decodeLogs(logs: MirrorLog[], abi: Abi): DecodedPoolEvent[] {
   return logs.flatMap(log => {
     try {
       const decoded = decodeEventLog({
@@ -82,6 +73,45 @@ export async function fetchContractEvents(
   });
 }
 
+/** The mirror node's `links.next` is a path from the host root (`/api/v1/...`); resolve it against the base URL. */
+export const nextPageUrl = (baseUrl: string, links?: { next: string | null }) =>
+  links?.next ? new URL(links.next, baseUrl).toString() : undefined;
+
+export type EventQuery = {
+  /** Only keep these events. Default: every event in the ABI. */
+  eventNames?: string[];
+  /** Stop once this many matching events are collected. */
+  maxEvents?: number;
+  /** Logs per mirror-node request (max 100). */
+  pageSize?: number;
+  /** Upper bound on requests, so a very busy contract cannot stall the page. */
+  maxPages?: number;
+};
+
+/**
+ * A contract's events, newest first, decoded with its ABI. The mirror node is the indexer: no subgraph or backend.
+ * Topic filters need a timestamp range of at most 7 days, so this walks `links.next` instead and filters by name:
+ * events that are not asked for (deposits, withdrawals…) can never crowd the wanted ones out of a single page.
+ */
+export async function fetchContractEvents(
+  network: HederaNetwork,
+  contract: string,
+  abi: Abi,
+  { eventNames, maxEvents = 50, pageSize = 100, maxPages = 20 }: EventQuery = {},
+): Promise<DecodedPoolEvent[]> {
+  const base = MIRROR_URLS[network];
+  const events: DecodedPoolEvent[] = [];
+  let url: string | undefined = `${base}/contracts/${contract}/results/logs?order=desc&limit=${pageSize}`;
+  for (let page = 0; url && page < maxPages && events.length < maxEvents; page++) {
+    const { logs, links }: LogsPage = await getJson<LogsPage>(url);
+    for (const event of decodeLogs(logs, abi)) {
+      if (!eventNames || eventNames.includes(event.eventName)) events.push(event);
+    }
+    url = nextPageUrl(base, links);
+  }
+  return events.slice(0, maxEvents);
+}
+
 export type MirrorAccount = {
   account: string;
   evm_address: string;
@@ -99,6 +129,15 @@ export async function fetchAccount(network: HederaNetwork, idOrAddress: string):
   if (!res.ok) throw new Error(`Mirror node account lookup failed (${res.status})`);
   return res.json() as Promise<MirrorAccount>;
 }
+
+/**
+ * Whether a deposit needs an explicit `associate()` first. The mirror node reports an account's auto-association limit
+ * but not how many slots are used, so only an unlimited limit (-1) is trusted to cover a new token.
+ */
+export const needsAssociation = (
+  account: Pick<MirrorAccount, "max_automatic_token_associations">,
+  associated: boolean,
+) => !associated && account.max_automatic_token_associations !== -1;
 
 /** Whether an account already holds a relationship with `tokenId` (i.e. is associated). */
 export async function isAssociated(network: HederaNetwork, accountId: string, tokenId: string): Promise<boolean> {
