@@ -131,11 +131,36 @@ async function balanceOf(provider, address) {
   return (await provider.getBalance(address)).toBigInt() / WEIBARS_PER_TINYBAR;
 }
 
-/** Sends a transaction, waits for it and records its gas under `label`. */
+const SYSTEM_CONTRACTS = {
+  "0x0000000000000000000000000000000000000167": "HTS",
+  "0x0000000000000000000000000000000000000169": "PRNG",
+  "0x000000000000000000000000000000000000016b": "HSS",
+};
+
+/** Gas each system-contract call inside a transaction used, from the mirror node's call trace. */
+async function systemCallGas(hash) {
+  const res = await waitFor(
+    () => mirrorGet(network, `/contracts/results/${hash}/actions?limit=100`),
+    { label: `actions of ${hash}` }
+  );
+  return (res?.actions ?? []).flatMap((a) => {
+    const name = SYSTEM_CONTRACTS[a.to?.toLowerCase()];
+    return name
+      ? [
+          `${name} ${a.input?.slice(0, 10)}: ${a.gas_used}/${a.gas} ${
+            a.result_data_type
+          }`,
+        ]
+      : [];
+  });
+}
+
+/** Sends a transaction, waits for it and records its gas (and its system-contract calls) under `label`. */
 async function send(label, sendTx) {
   const tx = await sendTx();
   const receipt = await tx.wait();
   gasUsed[label] = receipt.gasUsed.toNumber();
+  gasUsed[`${label}: system calls`] = await systemCallGas(tx.hash);
   return receipt;
 }
 
@@ -264,8 +289,9 @@ describe(
       const config = prizePoolConfig({
         ROUND_SECONDS,
         DRAW_GRACE_SECONDS: 20,
-        KEEPER_BUFFER_HBAR: 6,
-        KEEPER_SEED_HBAR: 7,
+        KEEPER_BUFFER_HBAR: 10,
+        KEEPER_SEED_HBAR: 11,
+        DRAW_GAS_LIMIT: 6_000_000,
       });
       let deployment;
       let pool;
@@ -336,7 +362,7 @@ describe(
         await send("deposit (first saver, schedules the draw)", () =>
           pool.connect(alice.wallet).deposit({
             value: DEPOSIT * WEIBARS_PER_TINYBAR,
-            gasLimit: 1_500_000,
+            gasLimit: 8_000_000,
           })
         );
         drawRound = (await pool.currentRound()).toNumber();
@@ -491,6 +517,8 @@ describe(
           { label: "draw contract result" }
         );
         gasUsed["draw (scheduled, 2 savers)"] = result.gas_used;
+        gasUsed["draw (scheduled, 2 savers): system calls"] =
+          await systemCallGas(result.hash);
         console.log(
           `scheduled draw: from ${result.from}, gas ${result.gas_used}/${result.gas_limit}, pool paid ${fee} tinybars, ` +
             `prize ${prize} (surplus above reserve before the draw ${
@@ -502,9 +530,6 @@ describe(
           deployment.address.toLowerCase(),
           "the draw ran as the contract's own scheduled call"
         );
-
-        // The draw scheduled the next round's draw, funded by the reserve it left intact.
-        assert.equal((await pool.scheduledRound()).toNumber(), drawRound + 1);
       });
 
       it("returns principal to the tinybar on withdraw and wipes the tickets", async () => {
@@ -546,6 +571,11 @@ describe(
 
       it("stops scheduling, and paying for, draws once the pool is empty", async () => {
         const emptyRound = drawRound + 1;
+        assert.equal(
+          (await pool.scheduledRound()).toNumber(),
+          emptyRound,
+          "the draw scheduled the next round"
+        );
         await waitOnChain(
           client,
           alice.accountId,
@@ -698,7 +728,7 @@ describe(
         await send("triggerDraw (schedules the draw)", () =>
           pool.connect(carol.wallet).triggerDraw({
             value: topUp * WEIBARS_PER_TINYBAR,
-            gasLimit: 800_000,
+            gasLimit: 8_000_000,
           })
         );
         assert.equal((await pool.scheduledRound()).toNumber(), round);
@@ -739,6 +769,8 @@ describe(
           { label: "draw contract result" }
         );
         gasUsed["draw (scheduled, 1 saver)"] = result.gas_used;
+        gasUsed["draw (scheduled, 1 saver): system calls"] =
+          await systemCallGas(result.hash);
         assert.equal(
           result.from.toLowerCase(),
           deployment.address.toLowerCase(),
