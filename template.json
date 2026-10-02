@@ -1,0 +1,88 @@
+{
+  "name": "prize-savings",
+  "description": "No-loss prize savings on Hedera: deposits stay in the contract and earn native staking rewards, draws schedule themselves with the Hedera Schedule Service, winners come from the PRNG system contract, and deposits are mirrored as non-transferable HTS tickets.",
+  "version": "1.0.0",
+  "create-scaffold-hbar": {
+    "capabilities": {
+      "frontend": [
+        "nextjs-app"
+      ],
+      "solidityFramework": [
+        "foundry"
+      ],
+      "packageManager": [
+        "yarn"
+      ]
+    },
+    "defaults": {
+      "frontend": "nextjs-app",
+      "solidityFramework": "foundry",
+      "packageManager": "yarn"
+    },
+    "requirements": {
+      "node": ">=20.18.3"
+    },
+    "envVars": [
+      {
+        "key": "ETH_KEYSTORE_ACCOUNT",
+        "description": "packages/foundry/.env: Foundry keystore used by `foundry:deploy` (create one with `foundry:account:generate`)."
+      },
+      {
+        "key": "ROUND_SECONDS",
+        "description": "packages/foundry/.env (optional): round length for new deployments, default 86400 (one staking-reward period)."
+      },
+      {
+        "key": "NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL",
+        "description": "packages/nextjs/.env.local (optional): JSON-RPC endpoint, default https://testnet.hashio.io/api."
+      },
+      {
+        "key": "NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID",
+        "description": "packages/nextjs/.env.local (optional): WalletConnect project id for production deployments."
+      }
+    ],
+    "outro": {
+      "sections": [
+        {
+          "steps": [
+            {
+              "text": "The frontend already points at a live PrizePool on Hedera testnet, so you can start the app and deposit right away."
+            }
+          ]
+        },
+        {
+          "title": "Try the live pool",
+          "steps": [
+            {
+              "label": "Start the frontend",
+              "command": "{run:next:dev}"
+            },
+            {
+              "label": "Get testnet HBAR for your wallet",
+              "url": "https://portal.hedera.com/faucet"
+            }
+          ]
+        },
+        {
+          "title": "Deploy your own pool",
+          "steps": [
+            {
+              "label": "Run the contract tests (unit + invariant)",
+              "command": "{run:foundry:test}"
+            },
+            {
+              "label": "Create a deployer keystore and fund its address at the faucet",
+              "command": "{run:foundry:account:generate}"
+            },
+            {
+              "label": "Deploy a staked PrizePool with the Hedera SDK",
+              "command": "{run:foundry:deploy} --network testnet"
+            },
+            {
+              "text": "README.md explains the round lifecycle, the Hedera services involved and every configuration knob."
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

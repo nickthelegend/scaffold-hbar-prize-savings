@@ -1,0 +1,22 @@
+name: prize-savings-smoke
+server:
+  command: yarn next:dev
+  url: http://localhost:3000
+  timeoutMs: 180000
+defaults:
+  timeoutMs: 45000
+  failOnConsoleError: false
+routes:
+  - name: pool
+    path: /
+  - name: how-it-works
+    path: /how-it-works
+  - name: debug
+    path: /debug
+  - name: health
+    path: /api/health
+forbidden:
+  visibleText:
+    - Application error
+    - Unhandled Runtime Error
+    - Target Contract is not deployed

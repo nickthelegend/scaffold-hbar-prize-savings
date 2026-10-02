@@ -1,0 +1,14 @@
+{
+  "name": "prize-savings-yarn",
+  "description": "Install, test, lint and build. Nothing here needs secrets or funds.",
+  "requiresNoSecrets": true,
+  "forbiddenCommands": ["npm install", "npm run", "pnpm install", "pnpm run"],
+  "commands": [
+    { "name": "install", "command": "yarn install", "timeoutMs": 900000, "purpose": "Install workspace dependencies." },
+    { "name": "contracts", "command": "yarn foundry:test", "timeoutMs": 600000, "purpose": "Unit, invariant and gas tests." },
+    { "name": "frontend-tests", "command": "yarn next:test", "timeoutMs": 180000, "purpose": "Vitest for utils." },
+    { "name": "types", "command": "yarn next:check-types", "timeoutMs": 300000, "purpose": "TypeScript." },
+    { "name": "lint", "command": "yarn lint", "timeoutMs": 300000, "purpose": "ESLint, Prettier and forge fmt." },
+    { "name": "build", "command": "yarn next:build", "timeoutMs": 600000, "purpose": "Production build." }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "prize-savings-static",
+  "description": "Structure, manifest and safety invariants of the Prize Savings template.",
+  "jsonAssertions": [
+    { "file": "package.json", "path": "packageManager", "equals": "yarn@3.2.3" },
+    { "file": "template.json", "path": "name", "equals": "prize-savings" }
+  ],
+  "fileAssertions": {
+    "required": [
+      "README.md",
+      "AGENTS.md",
+      "LICENCE",
+      "template.json",
+      "package.json",
+      "packages/foundry/contracts/PrizePool.sol",
+      "packages/foundry/scripts-js/deployPrizePool.js",
+      "packages/foundry/contracts/PrizeLedger.sol",
+      "packages/foundry/test/PrizeLedger.t.sol",
+      "packages/foundry/test/PrizeLedger.invariant.t.sol",
+      "packages/foundry/test/e2e/prizePool.e2e.test.js",
+      "packages/nextjs/contracts/deployedContracts.ts",
+      "packages/nextjs/app/page.tsx",
+      "packages/nextjs/app/how-it-works/page.tsx",
+      ".harness/spec.yaml",
+      ".harness/prd.md"
+    ],
+    "forbidden": [".env", "packages/foundry/.env", "packages/nextjs/.env", "packages/nextjs/.env.local", "packages/hardhat"]
+  },
+  "textAssertions": [
+    { "file": "README.md", "contains": ["npm create scaffold-hbar@latest", "yarn foundry:deploy", "Testnet proof"] },
+    { "file": "AGENTS.md", "contains": ["Invariants you must preserve", "tinybars"] },
+    {
+      "file": "packages/foundry/contracts/PrizePool.sol",
+      "contains": ["nonReentrant", "hasScheduleCapacity", "getPseudorandomSeed", "freezeToken"]
+    }
+  ]
+}

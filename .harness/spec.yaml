@@ -1,0 +1,50 @@
+schemaVersion: 2
+
+name: prize-savings
+description: >-
+  No-loss prize savings on Hedera. Extend PrizePool and its Next.js frontend without breaking principal safety,
+  self-scheduled draws (HSS), PRNG winner selection, frozen HTS tickets, or the staking-based prize source.
+
+agent: claude
+prd: .harness/prd.md
+
+baseline:
+  commands:
+    - name: install
+      command: yarn install
+      timeoutMs: 900000
+    - name: contracts
+      command: yarn foundry:test
+      timeoutMs: 600000
+    - name: build
+      command: yarn next:build
+      timeoutMs: 600000
+
+validators:
+  static: .harness/validators/static.json
+  commands: .harness/validators/yarn.json
+  playwright: .harness/validators/playwright-smoke.yaml
+
+contract: .harness/acceptance-contract.json
+validator:
+  enabled: true
+
+# Tier 3.5: an ephemeral funded testnet signer is injected as the burner wallet and must complete a real deposit
+# and withdrawal against the live PrizePool in deployedContracts.ts. Export an ECDSA operator before running.
+chainValidation:
+  enabled: true
+  network: testnet
+  operator:
+    accountIdEnv: HEDERA_OPERATOR_ID
+    privateKeyEnv: HEDERA_OPERATOR_KEY
+  fundingHbar: 10
+  sweepBack: true
+  expose:
+    browserLocalStorageKey: burnerWallet.pk
+    envVars: []
+
+requiredFiles:
+  - packages/foundry/contracts/PrizePool.sol
+  - packages/foundry/test/PrizeLedger.invariant.t.sol
+  - packages/foundry/test/e2e/prizePool.e2e.test.js
+  - packages/nextjs/app/page.tsx

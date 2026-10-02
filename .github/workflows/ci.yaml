@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Test, lint and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.3
+          cache: yarn
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install
+        run: yarn install --immutable
+
+      - name: Contracts (unit + invariant)
+        run: yarn foundry:test
+
+      - name: Frontend unit tests
+        run: yarn next:test
+
+      - name: Types
+        run: yarn next:check-types
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Build
+        run: yarn next:build
+
+  e2e:
+    name: End-to-end on a Hiero Local Node
+    runs-on: ubuntu-latest
+    needs: check
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.3
+          cache: yarn
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install
+        run: yarn install --immutable
+
+      - name: Start local Hedera network
+        run: npx --yes @hashgraph/hedera-local@2.40.2 start -d --verbose=info
+
+      - name: Compile contracts
+        run: yarn foundry:compile
+
+      - name: Full round against real HTS, HSS and PRNG
+        run: yarn foundry:test:e2e
+
+      - name: Stop local network
+        if: always()
+        run: npx --yes @hashgraph/hedera-local@2.40.2 stop

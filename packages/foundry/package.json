@@ -1,0 +1,34 @@
+{
+  "name": "@sh/foundry",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "account": "make account",
+    "account:generate": "node scripts-js/generateKeystore.js",
+    "account:import": "node scripts-js/importAccount.js",
+    "account:reveal-pk": "node scripts-js/revealPK.js",
+    "clean": "forge clean",
+    "compile": "make compile",
+    "deploy": "node scripts-js/deployPrizePool.js",
+    "format": "make format",
+    "lint": "make lint",
+    "lint-staged": "yarn lint",
+    "test": "forge test",
+    "verify:testnet": "forge verify-contract --chain-id 296 --verifier sourcify",
+    "verify:mainnet": "forge verify-contract --chain-id 295 --verifier sourcify",
+    "postinstall": "shx cp -n .env.example .env",
+    "test:e2e": "node --test --test-concurrency=1 test/e2e/"
+  },
+  "dependencies": {
+    "@hiero-ledger/sdk": "^2.80.0",
+    "dotenv": "~16.3.1",
+    "envfile": "~6.18.0",
+    "ethers": "~5.7.1",
+    "prettier": "~2.8.8",
+    "qrcode": "~1.5.3",
+    "toml": "~3.0.0"
+  },
+  "devDependencies": {
+    "shx": "^0.3.4"
+  }
+}

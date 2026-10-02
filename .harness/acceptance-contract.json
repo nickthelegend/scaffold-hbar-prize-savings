@@ -1,0 +1,64 @@
+{
+  "name": "prize-savings",
+  "assertions": [
+    {
+      "id": "C1",
+      "journey": "Visitor sees the live pool",
+      "route": "/",
+      "severity": "critical",
+      "statement": "Without a wallet, the home page shows the round number, current prize in HBAR, a ticking countdown, total saved and number of savers, all loaded from the deployed PrizePool.",
+      "howToVerify": "Open / with no wallet connected. Confirm 'Round N prize' with a numeric HBAR amount, a countdown that changes over 3 seconds, and numeric 'Total saved' and 'Savers' values (no skeletons after 15 s).",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    },
+    {
+      "id": "C2",
+      "journey": "Visitor verifies the draw is scheduled on-chain",
+      "route": "/",
+      "severity": "critical",
+      "statement": "The hero links to the HSS schedule entity of the next draw on HashScan, and the 'Where the prize comes from' card shows the pool contract id and the node it is staked to.",
+      "howToVerify": "On /, find the 'Draw scheduled on-chain as 0.0.x' link and the staking card. The link points to hashscan.io/testnet/schedule/0.0.x and the card shows 'Staked to Node N'.",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    },
+    {
+      "id": "C3",
+      "journey": "Saver deposits HBAR",
+      "route": "/",
+      "severity": "critical",
+      "statement": "A connected saver can deposit 2 HBAR; afterwards 'Your savings' shows Deposited ≥ 2 HBAR, tickets equal to the deposit, and a non-zero chance this round.",
+      "howToVerify": "Connect the burner wallet, choose Deposit, enter 2, submit, wait for confirmation. Check the PositionCard values and that the mirror node shows a Deposited event from the signer to the PrizePool.",
+      "walletRequired": true,
+      "executableWithTestSigner": true
+    },
+    {
+      "id": "C4",
+      "journey": "Saver withdraws principal",
+      "route": "/",
+      "severity": "critical",
+      "statement": "The same saver can withdraw their full deposit; afterwards Deposited shows 0 and the wallet balance increased by the deposit minus fees.",
+      "howToVerify": "Choose Withdraw, click Max, submit, wait for confirmation, then check the PositionCard and the signer's HBAR balance on the mirror node.",
+      "walletRequired": true,
+      "executableWithTestSigner": true
+    },
+    {
+      "id": "C5",
+      "journey": "Input validation",
+      "route": "/",
+      "severity": "major",
+      "statement": "Invalid amounts (0, 'abc', more than 8 decimals, below the 1 HBAR minimum, above the deposited balance for withdraw) show an inline error and disable the submit button.",
+      "howToVerify": "Type each invalid value into the amount field in Deposit and Withdraw modes and confirm the error text and disabled button.",
+      "walletRequired": true
+    },
+    {
+      "id": "C6",
+      "journey": "Learner understands the pattern",
+      "route": "/how-it-works",
+      "severity": "major",
+      "statement": "The explainer lists the round lifecycle and a table of Hedera services (staking, HSS, PRNG, HTS, mirror node) with the code location of each.",
+      "howToVerify": "Open /how-it-works and check the five-step list and the services table rows.",
+      "walletRequired": false,
+      "verifiableWithoutCredentials": true
+    }
+  ]
+}
