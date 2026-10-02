@@ -37,7 +37,7 @@ chainValidation:
   operator:
     accountIdEnv: HEDERA_OPERATOR_ID
     privateKeyEnv: HEDERA_OPERATOR_KEY
-  fundingHbar: 10
+  fundingHbar: 25
   sweepBack: true
   expose:
     browserLocalStorageKey: burnerWallet.pk

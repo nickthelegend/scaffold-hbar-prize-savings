@@ -16,8 +16,8 @@
       "journey": "Visitor verifies the draw is scheduled on-chain",
       "route": "/",
       "severity": "critical",
-      "statement": "The hero links to the HSS schedule entity of the next draw on HashScan, and the 'Where the prize comes from' card shows the pool contract id and the node it is staked to.",
-      "howToVerify": "On /, find the 'Draw scheduled on-chain as 0.0.x' link and the staking card. The link points to hashscan.io/testnet/schedule/0.0.x and the card shows 'Staked to Node N'.",
+      "statement": "While a draw is scheduled for the current round, the hero links to its HSS schedule entity on HashScan; otherwise it says what the draw is waiting for (first saver, fee reserve, or a 'Schedule draw' button once triggerDraw is open). The 'Where the prize comes from' card shows the pool contract id and the node it is staked to.",
+      "howToVerify": "On /, find either the 'Draw scheduled on-chain as 0.0.x' link (pointing to hashscan.io/testnet/schedule/0.0.x) or the draw-status note, and the staking card showing 'Staked to Node N'.",
       "walletRequired": false,
       "verifiableWithoutCredentials": true
     },
@@ -26,8 +26,8 @@
       "journey": "Saver deposits HBAR",
       "route": "/",
       "severity": "critical",
-      "statement": "A connected saver can deposit 2 HBAR; afterwards 'Your savings' shows Deposited ≥ 2 HBAR, tickets equal to the deposit, and a non-zero chance this round.",
-      "howToVerify": "Connect the burner wallet, choose Deposit, enter 2, submit, wait for confirmation. Check the PositionCard values and that the mirror node shows a Deposited event from the signer to the PrizePool.",
+      "statement": "A connected saver can deposit 10 HBAR; afterwards 'Your savings' shows Deposited ≥ 10 HBAR, tickets equal to the deposit, and a non-zero chance this round.",
+      "howToVerify": "Connect the burner wallet, choose Deposit, enter 10, submit, wait for confirmation. Check the PositionCard values and that the mirror node shows a Deposited event from the signer to the PrizePool.",
       "walletRequired": true,
       "executableWithTestSigner": true
     },
@@ -46,7 +46,7 @@
       "journey": "Input validation",
       "route": "/",
       "severity": "major",
-      "statement": "Invalid amounts (0, 'abc', more than 8 decimals, below the 1 HBAR minimum, above the deposited balance for withdraw) show an inline error and disable the submit button.",
+      "statement": "Invalid amounts (0, 'abc', more than 8 decimals, below the 10 HBAR minimum, above the deposited balance for withdraw) show an inline error and disable the submit button.",
       "howToVerify": "Type each invalid value into the amount field in Deposit and Withdraw modes and confirm the error text and disabled button.",
       "walletRequired": true
     },
