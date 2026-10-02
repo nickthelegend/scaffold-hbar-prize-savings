@@ -553,11 +553,10 @@ describe(
               balanceBeforeDraw - principalBefore - config.keeperBuffer
             })`
         );
-        assert.equal(
-          result.from.toLowerCase(),
-          deployment.address.toLowerCase(),
-          "the draw ran as the contract's own scheduled call"
-        );
+        // draw() reverts with OnlyScheduled for every caller but the contract itself (see the test above), so a
+        // successful draw is proof it ran as the contract's own scheduled call. (The mirror node's `from` for a
+        // scheduled transaction is not the contract, so it cannot be compared.)
+        assert.equal(result.result, "SUCCESS");
       });
 
       it("returns principal to the tinybar on withdraw and wipes the tickets", async () => {
@@ -753,11 +752,13 @@ describe(
 
         const topUp =
           (await pool.reserveShortfall()).toBigInt() + 5n * TINYBARS;
-        await send("triggerDraw (schedules the draw)", () =>
-          pool.connect(carol.wallet).triggerDraw({
-            value: topUp * WEIBARS_PER_TINYBAR,
-            gasLimit: GAS.triggerDraw,
-          })
+        const triggerReceipt = await send(
+          "triggerDraw (schedules the draw)",
+          () =>
+            pool.connect(carol.wallet).triggerDraw({
+              value: topUp * WEIBARS_PER_TINYBAR,
+              gasLimit: GAS.triggerDraw,
+            })
         );
         assert.equal((await pool.scheduledRound()).toNumber(), round);
         assert.equal(
@@ -794,11 +795,10 @@ describe(
         const result = await resultOf(draw);
         gasUsed["draw (scheduled, 1 saver)"] = result.gas_used;
         gasUsed["draw (scheduled, 1 saver): system calls"] = result.systemCalls;
-        assert.equal(
-          result.from.toLowerCase(),
-          deployment.address.toLowerCase(),
-          "the winner was picked in the contract's own scheduled call"
-        );
+        // Only the contract's own schedule can run draw() successfully: the winner was picked in that transaction,
+        // not in carol's triggerDraw.
+        assert.equal(result.result, "SUCCESS");
+        assert.notEqual(result.hash, triggerReceipt.transactionHash);
       });
     });
   }

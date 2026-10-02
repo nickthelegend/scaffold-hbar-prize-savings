@@ -253,17 +253,17 @@ numbers on every CI run). System-contract calls are priced from their HAPI fees,
 | `boostPrize` | ≈ 30k | + ≈ 1.41M when it schedules the draw |
 | `triggerDraw` | ≈ 1.53M | |
 | `associate()` (HIP-719) | ≈ 729k | Only for accounts without unlimited auto-association |
-| Scheduled `draw` | ≈ 1.5M with 2 savers | 4 HTS calls, PRNG, `scheduleCall` for the next round, plus the saver scan |
+| Scheduled `draw` | ≈ 1.60M with 1–2 savers | 4 HTS calls and PRNG (≈ 15k each), `scheduleCall` for the next round (≈ 1.41M), plus the saver scan |
 | Saver scan in `draw` | ≈ 0.87M at 100 savers | `PrizeLedgerScanGasTest` bounds it |
 
-**`DRAW_GAS_LIMIT` (default 3M)** = a 2-saver draw (≈ 1.5M) + the 100-saver scan (≈ 0.87M) + ~25% margin. If you raise
+**`DRAW_GAS_LIMIT` (default 3M)** ≥ a 2-saver draw (≈ 1.60M) + the 100-saver scan (≈ 0.87M) ≈ 2.47M, plus ~20% margin. If you raise
 `MAX_PARTICIPANTS`, raise it by ≈ 9k gas per extra saver. It is immutable, and a draw that runs out of gas waits for
 `triggerDraw`.
 
 **Who pays.** The scheduled draw is paid by the pool: the payer is charged gas limit × gas price up front and refunded
 what the call did not use. Inside `draw` the up-front charge is already missing from the balance, so the prize is
 smaller by exactly that amount and the refund becomes part of the next prize (the e2e suite asserts this). On the
-local node a 6M-gas draw cost the pool a net 1.14 HBAR. Scheduling done by a deposit, boost or `triggerDraw` is paid
+local node a draw with the default 3M limit used 1.60M gas and cost the pool a net 1.14 HBAR (gas used × price). Scheduling done by a deposit, boost or `triggerDraw` is paid
 by that transaction's sender, which is why the frontend gives those calls extra gas only when they will schedule
 (`utils/prize-savings/gas.ts`).
 
