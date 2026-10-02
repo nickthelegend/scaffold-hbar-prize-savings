@@ -73,3 +73,26 @@ jobs:
       - name: Stop local network
         if: always()
         run: npx --yes @hashgraph/hedera-local@2.40.2 stop
+
+  scaffold:
+    name: Fresh scaffold with create-scaffold-hbar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.3
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Configure git and Yarn
+        run: |
+          git config --global user.name "ci"
+          git config --global user.email "ci@example.com"
+          corepack enable
+
+      - name: Scaffold this commit exactly as a user would
+        run: npm create scaffold-hbar@latest judge -- --template ${{ github.repository }}#${{ github.sha }} --skip-hedera-skills --yes
+
+      - name: Test, type-check, build and lint the scaffolded project
+        working-directory: judge
+        run: yarn foundry:test && yarn next:test && yarn next:check-types && yarn next:build && yarn lint

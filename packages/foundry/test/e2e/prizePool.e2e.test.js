@@ -138,7 +138,24 @@ async function explainStall(contractId, scheduleAddress) {
     gasUsed: r.gas_used,
     gasLimit: r.gas_limit,
   }));
-  return JSON.stringify({ schedule, recentCalls: calls }, null, 2);
+  const executed = schedule?.executed_timestamp
+    ? await mirrorGet(
+        network,
+        `/transactions?account.id=${contractId}&timestamp=gte:${schedule.consensus_timestamp}&order=asc&limit=25`
+      )
+    : null;
+  const transactions = (executed?.transactions ?? []).map((t) => ({
+    at: t.consensus_timestamp,
+    name: t.name,
+    result: t.result,
+    scheduled: t.scheduled,
+    fee: t.charged_tx_fee,
+  }));
+  return JSON.stringify(
+    { schedule, recentCalls: calls, transactions },
+    null,
+    2
+  );
 }
 
 async function heartbeat(client, to) {
@@ -175,6 +192,7 @@ describe(
           DRAW_GRACE_SECONDS: 20,
           KEEPER_BUFFER_HBAR: 1,
           KEEPER_SEED_HBAR: 2,
+          DRAW_GAS_LIMIT: 3_000_000,
         }),
         log: () => {},
       });

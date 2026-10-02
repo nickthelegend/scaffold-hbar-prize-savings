@@ -66,7 +66,8 @@ change accounting, extend those tests rather than weakening them.
   shows the `associate()` button.
 - **Staking elections** can only be set at creation through HAPI. Keep deployments in `deployPrizePool.js`.
 - **HSS:** check `hasScheduleCapacity` before `scheduleCall`; scheduled calls are paid from the contract's balance and
-  charged ≥ 80% of the gas limit, so keep `drawGasLimit` tight and the participant scan bounded.
+  charged ≥ 80% of the gas limit, so keep `drawGasLimit` tight and the participant scan bounded. HTS calls cost
+  hundreds of thousands of gas each on a real network (a deposit uses ≈ 0.9M); measure with `yarn foundry:test:e2e`.
 - **Mirror node:** `/contracts/{id}/results/logs` needs a timestamp range when filtering by topic; we fetch the latest
   page and decode with viem instead.
 

@@ -31,7 +31,7 @@ export function prizePoolConfig(overrides = {}) {
     keeperBuffer: hbar("KEEPER_BUFFER_HBAR", 5),
     minDeposit: hbar("MIN_DEPOSIT_HBAR", 1),
     maxParticipants: int("MAX_PARTICIPANTS", 100),
-    drawGasLimit: int("DRAW_GAS_LIMIT", 1_000_000),
+    drawGasLimit: int("DRAW_GAS_LIMIT", 3_000_000),
     ticketFeeHbar: Number(env.TICKET_FEE_HBAR ?? 15),
     keeperSeedHbar: Number(env.KEEPER_SEED_HBAR ?? 10),
   };

@@ -208,15 +208,18 @@ All amounts are **tinybars** (see [gotchas](#hedera-gotchas-this-template-handle
 
 ## Costs and sizing
 
-| Item | Typical cost (testnet, HBAR ≈ $0.10) |
+| Item | Measured on a real network (gas price 89 tinybar/gas, HBAR ≈ $0.10) |
 |---|---|
 | Deploy (`ContractCreateFlow`) | ≈ 15–20 HBAR |
 | Ticket token creation (`initialize` value) | ≈ 10 HBAR ($1 HTS fee) |
-| One scheduled draw | gas limit × 80% × gas price → 1M gas ≈ **0.7 HBAR** |
-| Draw gas | ≈ 5.5k gas per saver for the weight scan, plus the HTS and HSS calls |
+| Deposit or withdraw | ≈ 0.9M gas: HTS mint/transfer/freeze (or unfreeze/wipe) dominate, ≈ 0.8–1 HBAR in fees |
+| One scheduled draw | `DRAW_GAS_LIMIT` (default 3M) × ≥ 80% × gas price ≈ **2.1 HBAR**, paid by the pool from surplus |
+| Weight scan | ≈ 5.5k gas per saver on top of the HTS and HSS calls |
 
 Hedera charges a contract call at least 80% of its gas limit, so `DRAW_GAS_LIMIT` is a cost knob as well as a safety
-knob. The defaults (100 savers, 1M gas) leave headroom for the HTS and HSS calls.
+knob. HTS system-contract calls are priced from their HAPI fees, which makes them far more expensive in gas than plain
+EVM storage. A draw that mints tickets for the winner, re-freezes them and schedules the next draw needs well over
+1M gas. The 3M default leaves room for 100 savers.
 
 **Round length.** Staking rewards arrive once per 24-hour period, so rounds shorter than a day mostly roll over and
 spend fees. The default is 24 hours; the public testnet demo uses shorter rounds so visitors can watch draws happen.
@@ -293,7 +296,7 @@ CI runs the unit tests, lint, types and build on every push, then the end-to-end
 | `KEEPER_BUFFER_HBAR` | deploy env | `5` | Surplus reserved for schedule fees |
 | `MIN_DEPOSIT_HBAR` | deploy env | `1` | Minimum deposit (limits dust savers) |
 | `MAX_PARTICIPANTS` | deploy env | `100` | Cap that bounds draw gas |
-| `DRAW_GAS_LIMIT` | deploy env | `1000000` | Gas for each scheduled draw |
+| `DRAW_GAS_LIMIT` | deploy env | `3000000` | Gas for each scheduled draw |
 | `TICKET_FEE_HBAR` | deploy env | `15` | Value sent to `initialize` for the HTS creation fee |
 | `KEEPER_SEED_HBAR` | deploy env | `10` | Initial boost that pays the first scheduled draws |
 | `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL` | `packages/nextjs/.env.local` | Hashio | JSON-RPC endpoint |
