@@ -49,7 +49,9 @@ export const DrawHistory = () => {
                       <td className="tabular-nums">{draw.round.toString()}</td>
                       <td>
                         {draw.kind === "won" ? (
-                          <HederaAddress address={draw.winner as `0x${string}`} chain={targetNetwork} />
+                          <div className="inline-flex">
+                            <HederaAddress address={draw.winner as `0x${string}`} chain={targetNetwork} />
+                          </div>
                         ) : (
                           <span className="text-base-content/60">Rolled over</span>
                         )}
@@ -82,7 +84,8 @@ export const DrawHistory = () => {
 const PrizeChart = ({ draws }: { draws: DrawRecord[] }) => {
   const max = draws.reduce((m, d) => (d.prize > m ? d.prize : m), 1n);
   return (
-    <figure className="m-0">
+    // A div, not a <figure>: daisyUI lays out figures inside a card as a centred flex row.
+    <div>
       <div className="flex h-32 justify-center gap-1.5" role="img" aria-label="Prize per round">
         {draws.map(draw => {
           const height = Math.max(4, Number((draw.prize * 100n) / max));
@@ -104,9 +107,9 @@ const PrizeChart = ({ draws }: { draws: DrawRecord[] }) => {
           );
         })}
       </div>
-      <figcaption className="mt-1 text-xs text-base-content/60">
+      <p className="m-0 mt-1 text-center text-xs text-base-content/60">
         Prize per round (dashed = no winner, carried over)
-      </figcaption>
-    </figure>
+      </p>
+    </div>
   );
 };

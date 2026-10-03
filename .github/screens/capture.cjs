@@ -91,6 +91,10 @@ async function waitForPosition(page) {
     { timeout: 120_000 },
   );
   await savePanel(page).getByRole("button", { name: "Deposit" }).waitFor({ timeout: 60_000 });
+  // The header shows the connected account's HBAR balance.
+  await page.waitForFunction(() => /\d\s*HBAR/.test(document.querySelector(".navbar")?.textContent ?? ""), null, {
+    timeout: 60_000,
+  });
 }
 
 /** Scrolls so `locator` starts `offset` px below the top of the viewport (the header is static on desktop). */
