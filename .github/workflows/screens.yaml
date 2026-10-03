@@ -1,0 +1,105 @@
+name: Screenshots
+
+# Captures the README screenshots from a real pool: a PrizePool seeded on a Hiero Local Node (real HTS, HSS, PRNG and
+# mirror node), read by the production build of the app. Download them from the run's `screens` artifact.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/screens.yaml
+      - .github/screens/**
+      - packages/foundry/scripts-js/seedDemoPool.js
+
+jobs:
+  screens:
+    name: Seed a pool on a Hiero Local Node and capture the app
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      NEXT_PUBLIC_HEDERA_NETWORK: local
+      STATE_FILE: ${{ github.workspace }}/packages/foundry/deployments/demo-298.json
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.18.3
+          cache: yarn
+
+      - uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install
+        run: yarn install --immutable
+
+      - name: Install Playwright (outside the workspace, so the lockfile stays untouched)
+        run: |
+          mkdir -p "$RUNNER_TEMP/pw" && cd "$RUNNER_TEMP/pw"
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund playwright@1.48.2
+          npx playwright install --with-deps chromium
+
+      - name: Start local Hedera network
+        run: npx --yes @hashgraph/hedera-local@2.40.2 start -d --verbose=info
+
+      - name: Compile contracts
+        run: yarn foundry:compile
+
+      - name: Seed the pool (keeps running in the background)
+        run: |
+          nohup yarn foundry:seed-demo --keep-alive > seed.log 2>&1 &
+          echo $! > seed.pid
+          for i in $(seq 1 120); do
+            if [ -f "$STATE_FILE" ]; then cat seed.log; exit 0; fi
+            if ! kill -0 "$(cat seed.pid)" 2>/dev/null; then cat seed.log; exit 1; fi
+            sleep 5
+          done
+          cat seed.log; exit 1
+
+      - name: Build the app against the local pool
+        run: yarn next:build
+
+      - name: Start the app
+        run: |
+          nohup yarn next:serve -p 3000 > next.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000/api/health && exit 0
+            sleep 2
+          done
+          cat next.log; exit 1
+
+      - name: Wait for two executed draws
+        run: |
+          for i in $(seq 1 120); do
+            draws=$(jq -r .draws "$STATE_FILE")
+            if [ "$draws" -ge 2 ]; then cat seed.log; exit 0; fi
+            if ! kill -0 "$(cat seed.pid)" 2>/dev/null; then cat seed.log; exit 1; fi
+            sleep 5
+          done
+          cat seed.log; exit 1
+
+      - name: Capture screenshots
+        run: NODE_PATH="$RUNNER_TEMP/pw/node_modules" node .github/screens/capture.cjs
+        env:
+          OUT_DIR: screens
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screens
+          path: screens/*.png
+          if-no-files-found: warn
+
+      - name: Seed and app logs
+        if: always()
+        run: |
+          echo "::group::seed.log"; cat seed.log || true; echo "::endgroup::"
+          echo "::group::next.log"; cat next.log || true; echo "::endgroup::"
+
+      - name: Stop
+        if: always()
+        run: |
+          kill "$(cat seed.pid)" 2>/dev/null || true
+          npx --yes @hashgraph/hedera-local@2.40.2 stop

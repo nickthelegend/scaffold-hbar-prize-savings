@@ -20,6 +20,7 @@
     "foundry:format": "yarn workspace @sh/foundry format",
     "foundry:lint": "yarn workspace @sh/foundry lint",
     "foundry:lint-staged": "yarn workspace @sh/foundry lint-staged",
+    "foundry:seed-demo": "yarn workspace @sh/foundry seed-demo",
     "foundry:test": "yarn workspace @sh/foundry test",
     "foundry:test:e2e": "yarn workspace @sh/foundry test:e2e",
     "foundry:verify:mainnet": "yarn workspace @sh/foundry verify:mainnet",
