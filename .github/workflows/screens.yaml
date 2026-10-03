@@ -18,6 +18,9 @@ jobs:
     env:
       NEXT_PUBLIC_HEDERA_NETWORK: local
       STATE_FILE: ${{ github.workspace }}/packages/foundry/deployments/demo-298.json
+      # The local node's Grafana already listens on 3000.
+      BASE_URL: http://localhost:3100
+      MIN_DRAWS: 4
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,18 +65,18 @@ jobs:
 
       - name: Start the app
         run: |
-          nohup yarn next:serve -p 3000 > next.log 2>&1 &
+          nohup yarn next:serve -p 3100 > next.log 2>&1 &
           for i in $(seq 1 60); do
-            curl -sf http://localhost:3000/api/health && exit 0
+            curl -sf "$BASE_URL/api/health" | grep -q '"chainId":298' && exit 0
             sleep 2
           done
           cat next.log; exit 1
 
-      - name: Wait for two executed draws
+      - name: Wait for executed draws
         run: |
           for i in $(seq 1 120); do
-            draws=$(jq -r .draws "$STATE_FILE")
-            if [ "$draws" -ge 2 ]; then cat seed.log; exit 0; fi
+            draws=$(jq -r .draws "$STATE_FILE" 2>/dev/null || echo 0)
+            if [ "$draws" -ge "$MIN_DRAWS" ]; then cat seed.log; exit 0; fi
             if ! kill -0 "$(cat seed.pid)" 2>/dev/null; then cat seed.log; exit 1; fi
             sleep 5
           done

@@ -203,6 +203,7 @@ async function debugShot(page, name, error) {
       } catch (error) {
         failed = true;
         await debugShot(page, `pool${suffix}`, error);
+        break;
       }
       await context.close();
       // The connected view is a bonus: a failure there is reported but does not fail the run.

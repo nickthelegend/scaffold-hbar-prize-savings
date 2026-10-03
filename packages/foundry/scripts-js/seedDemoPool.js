@@ -71,7 +71,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const log = (message) =>
   console.log(`[${new Date().toISOString().slice(11, 19)}] ${message}`);
 
-async function createSaver(client, provider, { name, deposit }) {
+async function createSaver(client, provider, spec) {
+  const { name, deposit } = spec;
   const key = PrivateKey.generateECDSA();
   const tx = await new AccountCreateTransaction()
     .setECDSAKeyWithAlias(key)
@@ -83,8 +84,7 @@ async function createSaver(client, provider, { name, deposit }) {
   const wallet = new ethers.Wallet(privateKey, provider);
   log(`saver ${name}: ${accountId} (${wallet.address})`);
   return {
-    name,
-    deposit,
+    ...spec,
     accountId: accountId.toString(),
     address: wallet.address,
     privateKey,
