@@ -57,7 +57,7 @@ export async function mirrorGet(network, path) {
 /** Polls `fn` until it returns a truthy value or the timeout elapses. Mirror data lags consensus by a few seconds. */
 export async function waitFor(
   fn,
-  { timeoutMs = 60_000, intervalMs = 1_500, label = "condition" } = {}
+  { timeoutMs = 120_000, intervalMs = 1_500, label = "condition" } = {}
 ) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
