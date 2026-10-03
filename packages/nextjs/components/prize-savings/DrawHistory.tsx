@@ -83,16 +83,22 @@ const PrizeChart = ({ draws }: { draws: DrawRecord[] }) => {
   const max = draws.reduce((m, d) => (d.prize > m ? d.prize : m), 1n);
   return (
     <figure className="m-0">
-      <div className="flex h-32 items-end gap-1.5" role="img" aria-label="Prize per round">
+      <div className="flex h-32 justify-center gap-1.5" role="img" aria-label="Prize per round">
         {draws.map(draw => {
           const height = Math.max(4, Number((draw.prize * 100n) / max));
           return (
-            <div key={`${draw.round}-${draw.transactionHash}`} className="flex flex-1 flex-col items-center gap-1">
-              <div
-                className={`w-full rounded-t-md ${draw.kind === "won" ? "bg-primary" : "border-2 border-dashed border-base-300"}`}
-                style={{ height: `${height}%` }}
-                title={`Round ${draw.round}: ${formatTinybars(draw.prize)} HBAR`}
-              />
+            <div
+              key={`${draw.round}-${draw.transactionHash}`}
+              className="flex h-full max-w-20 flex-1 flex-col items-center gap-1"
+            >
+              {/* The bar is positioned in a box of definite height, so its percentage height resolves. */}
+              <div className="relative w-full flex-1">
+                <div
+                  className={`absolute inset-x-0 bottom-0 rounded-t-md ${draw.kind === "won" ? "bg-primary" : "border-2 border-dashed border-base-300"}`}
+                  style={{ height: `${height}%` }}
+                  title={`Round ${draw.round}: ${formatTinybars(draw.prize)} HBAR`}
+                />
+              </div>
               <span className="text-[10px] tabular-nums text-base-content/60">{draw.round.toString()}</span>
             </div>
           );
