@@ -21,6 +21,18 @@ This is the prize-linked-savings pattern (PoolTogether, UK Premium Bonds). On mo
 protocol, a VRF oracle and a keeper network. On Hedera all three are part of the network, which is what this template
 shows you how to use.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![Pool: round prize, live countdown to the scheduled draw, and a connected saver's deposit and odds](docs/screens/pool.png) | ![Past draws: prize per round and winners, and where the prize comes from](docs/screens/draws.png) |
+| ![The pool in dark mode](docs/screens/pool-dark.png) | ![How it works: a round step by step](docs/screens/how-it-works.png) |
+
+These are captured from a real pool, not a mock-up: [`screens.yaml`](.github/workflows/screens.yaml) starts a Hiero
+Local Node (real HTS, HSS, PRNG and mirror node), runs `yarn foundry:seed-demo` (four savers, sponsor boosts, draws
+executed by the network's own schedules), builds the app against it and screenshots it with a seeded saver connected
+through the burner wallet. Each run uploads the full set, light and dark plus card crops, as its `screens` artifact.
+
 ---
 
 ## Contents
@@ -351,6 +363,11 @@ CI runs the unit tests, lint, types and build on every push, then the end-to-end
 `yarn foundry:deploy --network local` deploys to a running local node (genesis operator, no faucet needed), and
 `NEXT_PUBLIC_HEDERA_NETWORK=local yarn next:dev` points the frontend at it (chain 298, mirror node on
 `localhost:5551`).
+
+For a pool that already has history, `yarn foundry:seed-demo` deploys one with 90-second rounds (`ROUND_SECONDS`),
+has four savers deposit, boosts the prize and waits for two scheduled draws; `--keep-alive` keeps boosting and sending
+the heartbeats an idle local node needs to execute due schedules. The savers' throwaway keys are written to
+`packages/foundry/deployments/demo-298.json`; paste one into the burner wallet to act as that saver.
 
 ## Configuration
 
