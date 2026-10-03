@@ -51,6 +51,8 @@ export const RainbowKitCustomConnectButton = () => {
                         minHeight: "0",
                         height: "auto",
                         fontSize: "0.8em",
+                        // The component library's text colour is white, which disappears on the light header.
+                        color: "var(--color-base-content)",
                       }}
                     />
                     <span className="text-xs" style={{ color: networkColor }}>
