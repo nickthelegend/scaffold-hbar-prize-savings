@@ -7,795 +7,795 @@ import { GenericContractsDeclaration } from "~~/utils/scaffold-hbar/contract";
 const deployedContracts = {
   296: {
     PrizePool: {
-      address: "0x0000000000000000000000000000000000000000",
-      abi: [
+      "address": "0x0000000000000000000000000000000000a5784f",
+      "abi": [
         {
-          type: "constructor",
-          inputs: [
+          "type": "constructor",
+          "inputs": [
             {
-              name: "roundDuration_",
-              type: "uint256",
-              internalType: "uint256",
+              "name": "roundDuration_",
+              "type": "uint256",
+              "internalType": "uint256"
             },
             {
-              name: "drawGrace_",
-              type: "uint256",
-              internalType: "uint256",
+              "name": "drawGrace_",
+              "type": "uint256",
+              "internalType": "uint256"
             },
             {
-              name: "keeperBuffer_",
-              type: "uint256",
-              internalType: "uint256",
+              "name": "keeperBuffer_",
+              "type": "uint256",
+              "internalType": "uint256"
             },
             {
-              name: "minDeposit_",
-              type: "uint256",
-              internalType: "uint256",
+              "name": "minDeposit_",
+              "type": "uint256",
+              "internalType": "uint256"
             },
             {
-              name: "maxParticipants_",
-              type: "uint256",
-              internalType: "uint256",
+              "name": "maxParticipants_",
+              "type": "uint256",
+              "internalType": "uint256"
             },
             {
-              name: "drawGasLimit_",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "drawGasLimit_",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "nonpayable",
+          "stateMutability": "nonpayable"
         },
         {
-          type: "receive",
-          stateMutability: "payable",
+          "type": "receive",
+          "stateMutability": "payable"
         },
         {
-          type: "function",
-          name: "accountOf",
-          inputs: [
+          "type": "function",
+          "name": "accountOf",
+          "inputs": [
             {
-              name: "user",
-              type: "address",
-              internalType: "address",
-            },
+              "name": "user",
+              "type": "address",
+              "internalType": "address"
+            }
           ],
-          outputs: [
+          "outputs": [
             {
-              name: "balance",
-              type: "uint256",
-              internalType: "uint256",
+              "name": "balance",
+              "type": "uint256",
+              "internalType": "uint256"
             },
             {
-              name: "projectedWeight",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "projectedWeight",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "boostPrize",
-          inputs: [],
-          outputs: [],
-          stateMutability: "payable",
+          "type": "function",
+          "name": "boostPrize",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "payable"
         },
         {
-          type: "function",
-          name: "currentRound",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "currentRound",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "deployer",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "deployer",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "address",
-              internalType: "address",
-            },
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "deposit",
-          inputs: [],
-          outputs: [],
-          stateMutability: "payable",
+          "type": "function",
+          "name": "deposit",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "payable"
         },
         {
-          type: "function",
-          name: "draw",
-          inputs: [
+          "type": "function",
+          "name": "draw",
+          "inputs": [
             {
-              name: "round",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "round",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          outputs: [],
-          stateMutability: "nonpayable",
+          "outputs": [],
+          "stateMutability": "nonpayable"
         },
         {
-          type: "function",
-          name: "drawGasLimit",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "drawGasLimit",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "drawGrace",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "drawGrace",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "drawOpensAt",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "drawOpensAt",
+          "inputs": [],
+          "outputs": [
             {
-              name: "opensAt",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "opensAt",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "initialize",
-          inputs: [],
-          outputs: [],
-          stateMutability: "payable",
+          "type": "function",
+          "name": "initialize",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "payable"
         },
         {
-          type: "function",
-          name: "keeperBuffer",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "keeperBuffer",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "maxParticipants",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "maxParticipants",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "minDeposit",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "minDeposit",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "nextDrawSchedule",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "nextDrawSchedule",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "address",
-              internalType: "address",
-            },
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "oddsOf",
-          inputs: [
+          "type": "function",
+          "name": "oddsOf",
+          "inputs": [
             {
-              name: "user",
-              type: "address",
-              internalType: "address",
-            },
+              "name": "user",
+              "type": "address",
+              "internalType": "address"
+            }
           ],
-          outputs: [
+          "outputs": [
             {
-              name: "userWeight",
-              type: "uint256",
-              internalType: "uint256",
+              "name": "userWeight",
+              "type": "uint256",
+              "internalType": "uint256"
             },
             {
-              name: "totalWeight",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "totalWeight",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "participants",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "participants",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "address[]",
-              internalType: "address[]",
-            },
+              "name": "",
+              "type": "address[]",
+              "internalType": "address[]"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "participantsCount",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "participantsCount",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "prize",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "prize",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "reserveShortfall",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "reserveShortfall",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "roundDuration",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "roundDuration",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "roundEnd",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "roundEnd",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "roundStart",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "roundStart",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "scheduledFor",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "scheduledFor",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "scheduledRound",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "scheduledRound",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "ticket",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "ticket",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "address",
-              internalType: "address",
-            },
+              "name": "",
+              "type": "address",
+              "internalType": "address"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "totalPrincipal",
-          inputs: [],
-          outputs: [
+          "type": "function",
+          "name": "totalPrincipal",
+          "inputs": [],
+          "outputs": [
             {
-              name: "",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          stateMutability: "view",
+          "stateMutability": "view"
         },
         {
-          type: "function",
-          name: "triggerDraw",
-          inputs: [],
-          outputs: [],
-          stateMutability: "payable",
+          "type": "function",
+          "name": "triggerDraw",
+          "inputs": [],
+          "outputs": [],
+          "stateMutability": "payable"
         },
         {
-          type: "function",
-          name: "withdraw",
-          inputs: [
+          "type": "function",
+          "name": "withdraw",
+          "inputs": [
             {
-              name: "amount",
-              type: "uint256",
-              internalType: "uint256",
-            },
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
           ],
-          outputs: [],
-          stateMutability: "nonpayable",
+          "outputs": [],
+          "stateMutability": "nonpayable"
         },
         {
-          type: "event",
-          name: "Deposited",
-          inputs: [
+          "type": "event",
+          "name": "Deposited",
+          "inputs": [
             {
-              name: "user",
-              type: "address",
-              indexed: true,
-              internalType: "address",
+              "name": "user",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
             },
             {
-              name: "amount",
-              type: "uint256",
-              indexed: false,
-              internalType: "uint256",
+              "name": "amount",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
             },
             {
-              name: "round",
-              type: "uint256",
-              indexed: true,
-              internalType: "uint256",
-            },
+              "name": "round",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "event",
-          name: "DrawExecuted",
-          inputs: [
+          "type": "event",
+          "name": "DrawExecuted",
+          "inputs": [
             {
-              name: "round",
-              type: "uint256",
-              indexed: true,
-              internalType: "uint256",
+              "name": "round",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
             },
             {
-              name: "winner",
-              type: "address",
-              indexed: true,
-              internalType: "address",
+              "name": "winner",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
             },
             {
-              name: "prize",
-              type: "uint256",
-              indexed: false,
-              internalType: "uint256",
+              "name": "prize",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
             },
             {
-              name: "seed",
-              type: "bytes32",
-              indexed: false,
-              internalType: "bytes32",
+              "name": "seed",
+              "type": "bytes32",
+              "indexed": false,
+              "internalType": "bytes32"
             },
             {
-              name: "participants",
-              type: "uint256",
-              indexed: false,
-              internalType: "uint256",
-            },
+              "name": "participants",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "event",
-          name: "DrawNotScheduled",
-          inputs: [
+          "type": "event",
+          "name": "DrawNotScheduled",
+          "inputs": [
             {
-              name: "round",
-              type: "uint256",
-              indexed: true,
-              internalType: "uint256",
+              "name": "round",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
             },
             {
-              name: "reason",
-              type: "uint8",
-              indexed: false,
-              internalType: "enum PrizePool.NotScheduledReason",
-            },
+              "name": "reason",
+              "type": "uint8",
+              "indexed": false,
+              "internalType": "enum PrizePool.NotScheduledReason"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "event",
-          name: "DrawScheduled",
-          inputs: [
+          "type": "event",
+          "name": "DrawScheduled",
+          "inputs": [
             {
-              name: "round",
-              type: "uint256",
-              indexed: true,
-              internalType: "uint256",
+              "name": "round",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
             },
             {
-              name: "schedule",
-              type: "address",
-              indexed: false,
-              internalType: "address",
+              "name": "schedule",
+              "type": "address",
+              "indexed": false,
+              "internalType": "address"
             },
             {
-              name: "expirySecond",
-              type: "uint256",
-              indexed: false,
-              internalType: "uint256",
-            },
+              "name": "expirySecond",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "event",
-          name: "Initialized",
-          inputs: [
+          "type": "event",
+          "name": "Initialized",
+          "inputs": [
             {
-              name: "ticket",
-              type: "address",
-              indexed: true,
-              internalType: "address",
+              "name": "ticket",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
             },
             {
-              name: "firstRoundEnd",
-              type: "uint256",
-              indexed: false,
-              internalType: "uint256",
-            },
+              "name": "firstRoundEnd",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "event",
-          name: "PrizeBoosted",
-          inputs: [
+          "type": "event",
+          "name": "PrizeBoosted",
+          "inputs": [
             {
-              name: "sponsor",
-              type: "address",
-              indexed: true,
-              internalType: "address",
+              "name": "sponsor",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
             },
             {
-              name: "amount",
-              type: "uint256",
-              indexed: false,
-              internalType: "uint256",
+              "name": "amount",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
             },
             {
-              name: "round",
-              type: "uint256",
-              indexed: true,
-              internalType: "uint256",
-            },
+              "name": "round",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "event",
-          name: "RoundRolledOver",
-          inputs: [
+          "type": "event",
+          "name": "RoundRolledOver",
+          "inputs": [
             {
-              name: "round",
-              type: "uint256",
-              indexed: true,
-              internalType: "uint256",
+              "name": "round",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
             },
             {
-              name: "prize",
-              type: "uint256",
-              indexed: false,
-              internalType: "uint256",
+              "name": "prize",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
             },
             {
-              name: "participants",
-              type: "uint256",
-              indexed: false,
-              internalType: "uint256",
-            },
+              "name": "participants",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "event",
-          name: "ScheduleFailed",
-          inputs: [
+          "type": "event",
+          "name": "ScheduleFailed",
+          "inputs": [
             {
-              name: "round",
-              type: "uint256",
-              indexed: true,
-              internalType: "uint256",
+              "name": "round",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
             },
             {
-              name: "responseCode",
-              type: "int64",
-              indexed: false,
-              internalType: "int64",
-            },
+              "name": "responseCode",
+              "type": "int64",
+              "indexed": false,
+              "internalType": "int64"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "event",
-          name: "TicketSyncFailed",
-          inputs: [
+          "type": "event",
+          "name": "TicketSyncFailed",
+          "inputs": [
             {
-              name: "account",
-              type: "address",
-              indexed: true,
-              internalType: "address",
+              "name": "account",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
             },
             {
-              name: "op",
-              type: "uint8",
-              indexed: false,
-              internalType: "enum PrizePool.TicketOp",
+              "name": "op",
+              "type": "uint8",
+              "indexed": false,
+              "internalType": "enum PrizePool.TicketOp"
             },
             {
-              name: "responseCode",
-              type: "int64",
-              indexed: false,
-              internalType: "int64",
-            },
+              "name": "responseCode",
+              "type": "int64",
+              "indexed": false,
+              "internalType": "int64"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "event",
-          name: "Withdrawn",
-          inputs: [
+          "type": "event",
+          "name": "Withdrawn",
+          "inputs": [
             {
-              name: "user",
-              type: "address",
-              indexed: true,
-              internalType: "address",
+              "name": "user",
+              "type": "address",
+              "indexed": true,
+              "internalType": "address"
             },
             {
-              name: "amount",
-              type: "uint256",
-              indexed: false,
-              internalType: "uint256",
+              "name": "amount",
+              "type": "uint256",
+              "indexed": false,
+              "internalType": "uint256"
             },
             {
-              name: "round",
-              type: "uint256",
-              indexed: true,
-              internalType: "uint256",
-            },
+              "name": "round",
+              "type": "uint256",
+              "indexed": true,
+              "internalType": "uint256"
+            }
           ],
-          anonymous: false,
+          "anonymous": false
         },
         {
-          type: "error",
-          name: "AlreadyInitialized",
-          inputs: [],
+          "type": "error",
+          "name": "AlreadyInitialized",
+          "inputs": []
         },
         {
-          type: "error",
-          name: "AmountTooLarge",
-          inputs: [
+          "type": "error",
+          "name": "AmountTooLarge",
+          "inputs": [
             {
-              name: "amount",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
+              "name": "amount",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
-          type: "error",
-          name: "BelowMinDeposit",
-          inputs: [
+          "type": "error",
+          "name": "BelowMinDeposit",
+          "inputs": [
             {
-              name: "minDeposit",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
+              "name": "minDeposit",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
-          type: "error",
-          name: "DrawNotOpen",
-          inputs: [
+          "type": "error",
+          "name": "DrawNotOpen",
+          "inputs": [
             {
-              name: "opensAt",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
+              "name": "opensAt",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
-          type: "error",
-          name: "HbarTransferFailed",
-          inputs: [],
+          "type": "error",
+          "name": "HbarTransferFailed",
+          "inputs": []
         },
         {
-          type: "error",
-          name: "HtsCallFailed",
-          inputs: [
+          "type": "error",
+          "name": "HtsCallFailed",
+          "inputs": [
             {
-              name: "responseCode",
-              type: "int64",
-              internalType: "int64",
-            },
-          ],
+              "name": "responseCode",
+              "type": "int64",
+              "internalType": "int64"
+            }
+          ]
         },
         {
-          type: "error",
-          name: "InsufficientBalance",
-          inputs: [
+          "type": "error",
+          "name": "InsufficientBalance",
+          "inputs": [
             {
-              name: "balance",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
+              "name": "balance",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
-          type: "error",
-          name: "InsufficientReserve",
-          inputs: [
+          "type": "error",
+          "name": "InsufficientReserve",
+          "inputs": [
             {
-              name: "shortfall",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
+              "name": "shortfall",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
-          type: "error",
-          name: "InvalidConfig",
-          inputs: [],
+          "type": "error",
+          "name": "InvalidConfig",
+          "inputs": []
         },
         {
-          type: "error",
-          name: "NoParticipants",
-          inputs: [],
+          "type": "error",
+          "name": "NoParticipants",
+          "inputs": []
         },
         {
-          type: "error",
-          name: "NotDeployer",
-          inputs: [],
+          "type": "error",
+          "name": "NotDeployer",
+          "inputs": []
         },
         {
-          type: "error",
-          name: "NotInitialized",
-          inputs: [],
+          "type": "error",
+          "name": "NotInitialized",
+          "inputs": []
         },
         {
-          type: "error",
-          name: "OnlyScheduled",
-          inputs: [],
+          "type": "error",
+          "name": "OnlyScheduled",
+          "inputs": []
         },
         {
-          type: "error",
-          name: "ReentrancyGuardReentrantCall",
-          inputs: [],
+          "type": "error",
+          "name": "ReentrancyGuardReentrantCall",
+          "inputs": []
         },
         {
-          type: "error",
-          name: "SchedulingFailed",
-          inputs: [],
+          "type": "error",
+          "name": "SchedulingFailed",
+          "inputs": []
         },
         {
-          type: "error",
-          name: "StaleDraw",
-          inputs: [
+          "type": "error",
+          "name": "StaleDraw",
+          "inputs": [
             {
-              name: "round",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
+              "name": "round",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
-          type: "error",
-          name: "TooManyParticipants",
-          inputs: [
+          "type": "error",
+          "name": "TooManyParticipants",
+          "inputs": [
             {
-              name: "maxParticipants",
-              type: "uint256",
-              internalType: "uint256",
-            },
-          ],
+              "name": "maxParticipants",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
         },
         {
-          type: "error",
-          name: "ZeroAmount",
-          inputs: [],
-        },
+          "type": "error",
+          "name": "ZeroAmount",
+          "inputs": []
+        }
       ],
-      inheritedFunctions: {},
-      deployedOnBlock: 0,
+      "inheritedFunctions": {},
+      "deployedOnBlock": 41310654
     },
   },
 } as const;

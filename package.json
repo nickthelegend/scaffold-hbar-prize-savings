@@ -17,6 +17,7 @@
     "foundry:clean": "yarn workspace @sh/foundry clean",
     "foundry:compile": "yarn workspace @sh/foundry compile",
     "foundry:deploy": "yarn workspace @sh/foundry deploy",
+    "foundry:demo": "yarn workspace @sh/foundry demo",
     "foundry:format": "yarn workspace @sh/foundry format",
     "foundry:lint": "yarn workspace @sh/foundry lint",
     "foundry:lint-staged": "yarn workspace @sh/foundry lint-staged",

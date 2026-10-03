@@ -10,6 +10,7 @@
     "clean": "forge clean",
     "compile": "make compile",
     "deploy": "node scripts-js/deployPrizePool.js",
+    "demo": "node scripts-js/demoRound.js",
     "seed-demo": "node scripts-js/seedDemoPool.js",
     "format": "make format",
     "lint": "make lint",
