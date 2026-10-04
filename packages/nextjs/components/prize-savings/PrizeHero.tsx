@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { ClockIcon, UsersIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { formatDuration, useNow } from "~~/hooks/prize-savings/useNow";
 import { usePoolState } from "~~/hooks/prize-savings/usePoolState";
@@ -91,6 +92,7 @@ const DrawState = ({ status, now }: { status: DrawStatus; now: number }) => {
   const { targetNetwork } = useTargetNetwork();
   const { writeContractAsync, isPending } = useScaffoldWriteContract({ contractName: "PrizePool" });
   const { run, running } = useSingleFlight();
+  const queryClient = useQueryClient();
   const network = networkForChain(targetNetwork.id);
 
   const trigger = (topUp: bigint) =>
@@ -101,6 +103,7 @@ const DrawState = ({ status, now }: { status: DrawStatus; now: number }) => {
           value: tinybarsToWeibars(topUp),
           gas: GAS.triggerDraw,
         });
+        await queryClient.invalidateQueries();
       } catch {
         // useTransactor already showed the error (including a rejected signature).
       }
@@ -133,8 +136,9 @@ const DrawState = ({ status, now }: { status: DrawStatus; now: number }) => {
     case "waiting":
       return (
         <Note>
-          {status.missed ? "The scheduled draw did not complete." : "The network had no capacity to schedule the draw."}{" "}
-          Anyone can schedule it in {formatDuration(status.opensAt - now)}.
+          {status.missed
+            ? `The scheduled draw did not complete. Anyone can schedule it again in ${formatDuration(status.opensAt - now)}.`
+            : `No draw is scheduled for this round yet. Any deposit or boost schedules it now; otherwise anyone can in ${formatDuration(status.opensAt - now)}.`}
         </Note>
       );
     case "triggerable":

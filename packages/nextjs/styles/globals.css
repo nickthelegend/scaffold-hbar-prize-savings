@@ -150,3 +150,14 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/*
+ * In the light theme @scaffold-hbar-ui/debug-contracts draws `primary-content` (white, meant for text on the solid
+ * primary colour) on its light surfaces (`primary-subtle`, `base-100`): read values, addresses, balances and the Read buttons came
+ * out white on light grey. Those surfaces take body text instead; solid primary buttons keep white.
+ */
+[data-theme="light"] .bg-sui-primary-subtle,
+[data-theme="light"] .bg-sui-base-100,
+[data-theme="light"] .btn-dc-secondary {
+  --color-sui-primary-content: var(--color-sui-base-content);
+}

@@ -68,7 +68,16 @@ export const DrawHistory = () => {
                             <HederaAddress address={draw.winner as `0x${string}`} chain={targetNetwork} />
                           </div>
                         ) : (
-                          <span className="text-base-content/60">Rolled over</span>
+                          <span className="flex flex-col text-base-content/60">
+                            Rolled over
+                            <span className="text-xs">
+                              {draw.participants === 0n
+                                ? "no savers this round"
+                                : draw.prize === 0n
+                                  ? "nothing left to win after the draw fee"
+                                  : "carried into the next round"}
+                            </span>
+                          </span>
                         )}
                       </td>
                       <td className="whitespace-nowrap text-right tabular-nums">

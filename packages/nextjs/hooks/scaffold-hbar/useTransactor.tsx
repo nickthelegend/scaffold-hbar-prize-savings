@@ -5,6 +5,7 @@ import { SendTransactionMutate } from "wagmi/query";
 import scaffoldConfig from "~~/scaffold.config";
 import { wagmiConfig } from "~~/services/web3/wagmiConfig";
 import { AllowedChainIds, getBlockExplorerTxLink, notification } from "~~/utils/scaffold-hbar";
+import { friendlyTxError } from "~~/utils/prize-savings/errors";
 import { TransactorFuncOptions, getParsedErrorWithAllAbis } from "~~/utils/scaffold-hbar/contract";
 
 type TransactionFunc = (
@@ -97,7 +98,8 @@ export const useTransactor = (_walletClient?: WalletClient): TransactionFunc => 
         notification.remove(notificationId);
       }
       console.error("⚡️ ~ file: useTransactor.ts ~ error", error);
-      const message = getParsedErrorWithAllAbis(error, chainId as AllowedChainIds);
+      // The decoded error stays in the console above; the toast says it in words a saver can act on.
+      const message = friendlyTxError(getParsedErrorWithAllAbis(error, chainId as AllowedChainIds));
 
       // if receipt was reverted, show notification with block explorer link and return error
       if (transactionReceipt?.status === "reverted") {

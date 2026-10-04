@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { HederaPortalFaucet } from "@scaffold-hbar-ui/components";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { useAccount, useBalance, useWriteContract } from "wagmi";
 import { usePoolState } from "~~/hooks/prize-savings/usePoolState";
@@ -45,6 +46,9 @@ export const SavePanel = () => {
   const { writeContractAsync: writeToken, isPending: isAssociating } = useWriteContract();
   const transactor = useTransactor();
   const { run, running } = useSingleFlight();
+  const queryClient = useQueryClient();
+  // Reads poll every 10 s; after the visitor's own transaction, refresh everything at once.
+  const refresh = () => queryClient.invalidateQueries();
 
   // Stop fast polling once the mirror node reports the association.
   useEffect(() => {
@@ -83,6 +87,7 @@ export const SavePanel = () => {
         if (mode === "withdraw")
           await writeContractAsync({ functionName: "withdraw", args: [tinybars], gas: GAS.withdraw });
         setAmount("");
+        await refresh();
       } catch {
         // useTransactor already showed the error (including a rejected signature).
       }
@@ -95,6 +100,7 @@ export const SavePanel = () => {
           writeToken({ address: ticket!, abi: HRC719_ABI, functionName: "associate", gas: GAS.associate }),
         );
         setAwaitingAssociation(true);
+        await refresh();
       } catch {
         // Notified by useTransactor.
       }
