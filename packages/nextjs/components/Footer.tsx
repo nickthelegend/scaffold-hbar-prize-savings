@@ -15,9 +15,10 @@ export const Footer = () => {
   const { price: nativeCurrencyPrice } = useFetchHbarPrice();
 
   return (
-    <div className="min-h-0 py-5 px-1 mb-11 lg:mb-0">
+    <div className="min-h-0 py-5 px-1">
       <div>
-        <div className="fixed flex justify-between items-center w-full z-10 p-4 bottom-0 left-0 pointer-events-none">
+        {/* Floating on desktop; in the page flow on phones, where it would cover the content. */}
+        <div className="flex justify-between items-center w-full z-10 p-4 lg:fixed lg:bottom-0 lg:left-0 lg:pointer-events-none">
           <div className="flex flex-col md:flex-row gap-2 pointer-events-auto">
             {nativeCurrencyPrice > 0 && (
               <div>
