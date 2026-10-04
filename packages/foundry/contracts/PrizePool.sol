@@ -291,6 +291,16 @@ contract PrizePool is ReentrancyGuard {
         _scheduleDraw(round);
     }
 
+    /// @dev The reserve a new schedule needs above principal. Inside the scheduled draw itself the network has
+    ///      already taken that draw's up-front fee (gas limit × price) from the balance and refunds the unused part
+    ///      only after it returns, so there half the reserve must remain: the other half stands in for the fee in
+    ///      flight. Requiring the full reserve there stalled the chain after any rollover even with the reserve
+    ///      untouched. The deploy script requires `keeperBuffer` to cover two draws' up-front fees, so the half that
+    ///      remains still pays the next draw before principal.
+    function _reserveToSchedule() internal view returns (uint256) {
+        return msg.sender == address(this) ? keeperBuffer / 2 : keeperBuffer;
+    }
+
     function _surplusAbove(uint256 reserved) internal view returns (uint256) {
         uint256 balance = address(this).balance;
         return balance > reserved ? balance - reserved : 0;
@@ -313,7 +323,9 @@ contract PrizePool is ReentrancyGuard {
     /// deposit restarts it instead. Together this keeps `balance >= totalPrincipal` no matter how many rounds run.
     function _scheduleDraw(uint256 round) internal returns (bool) {
         if (_ledger.participants.length == 0) return _notScheduled(round, NotScheduledReason.NoParticipants);
-        if (reserveShortfall() > 0) return _notScheduled(round, NotScheduledReason.InsufficientReserve);
+        if (address(this).balance < _ledger.totalPrincipal + _reserveToSchedule()) {
+            return _notScheduled(round, NotScheduledReason.InsufficientReserve);
+        }
 
         uint256 roundEnd_ = _ledger.roundEnd;
         uint256 expiry = (block.timestamp > roundEnd_ ? block.timestamp : roundEnd_) + SCHEDULE_DELAY;

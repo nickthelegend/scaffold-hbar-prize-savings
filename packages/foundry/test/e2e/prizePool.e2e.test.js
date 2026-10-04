@@ -559,6 +559,47 @@ describe(
         assert.equal(result.result, "SUCCESS");
       });
 
+      it("keeps scheduling after a rollover while the fee reserve lasts", async () => {
+        // After a win the surplus is just the refund of the last draw's unused gas, less than the next draw's
+        // up-front fee, so the next round rolls over with no prize. The network charges that fee before the draw
+        // runs, so the draw must still schedule the round after (half the reserve covers the fee in flight);
+        // otherwise a quiet pool stops after its first rollover.
+        const rolloverRound = drawRound + 1;
+        assert.equal((await pool.scheduledRound()).toNumber(), rolloverRound);
+        await waitOnChain(
+          client,
+          alice.accountId,
+          async () => (await pool.currentRound()).toNumber() > rolloverRound,
+          {
+            label: "the rollover round's scheduled draw",
+            timeoutMs: (ROUND_SECONDS + 90) * 1000,
+          }
+        );
+        const rolled = await findEvent(
+          deployment.contractId,
+          iface,
+          "RoundRolledOver",
+          (a) => a.round.toNumber() === rolloverRound
+        );
+        assert.equal(
+          rolled.args.prize.toBigInt(),
+          0n,
+          "nothing left to win after the draw fee"
+        );
+        const next = await findEvent(
+          deployment.contractId,
+          iface,
+          "DrawScheduled",
+          (a) => a.round.toNumber() === rolloverRound + 1
+        );
+        assert.ok(next, "the rollover scheduled the next round");
+        assert.ok(
+          (await balanceOf(provider, deployment.address)) >=
+            (await pool.totalPrincipal()).toBigInt(),
+          "the fees came out of the reserve, never principal"
+        );
+      });
+
       it("returns principal to the tinybar on withdraw and wipes the tickets", async () => {
         for (const saver of [alice, bob]) {
           const [balance] = await pool.accountOf(saver.wallet.address);
@@ -597,7 +638,7 @@ describe(
       });
 
       it("stops scheduling, and paying for, draws once the pool is empty", async () => {
-        const emptyRound = drawRound + 1;
+        const emptyRound = (await pool.currentRound()).toNumber();
         assert.equal(
           (await pool.scheduledRound()).toNumber(),
           emptyRound,

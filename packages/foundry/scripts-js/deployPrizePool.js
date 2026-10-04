@@ -111,14 +111,16 @@ async function main() {
 
   const drawFee = maxDrawFee(config, await gasPriceTinybars(network.rpc));
   if (config.keeperBuffer < 2n * drawFee) {
-    console.warn(
-      `   ⚠️  KEEPER_BUFFER_HBAR (${
+    // Inside a draw half the reserve stands in for that draw's up-front fee, and the other half must still pay the
+    // next one before principal is touched (PrizePool._reserveToSchedule). Below two fees the pool could stall early
+    // or dip into principal for a moment, and with no admin key that can't be fixed after deployment.
+    throw new Error(
+      `KEEPER_BUFFER_HBAR (${
         Number(config.keeperBuffer) / 1e8
-      }) is below two draws' fees ` +
-        `(2 × ${Number(drawFee) / 1e8} HBAR at DRAW_GAS_LIMIT ${
+      }) must cover two draws' up-front fees: ` +
+        `2 × ${Number(drawFee) / 1e8} HBAR at DRAW_GAS_LIMIT ${
           config.drawGasLimit
-        }). The reserve may not cover a ` +
-        "stale schedule plus a draw; raise it."
+        } and today's gas price. Raise it.`
     );
   }
 

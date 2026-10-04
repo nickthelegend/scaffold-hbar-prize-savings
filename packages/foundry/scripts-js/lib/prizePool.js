@@ -28,7 +28,7 @@ export function prizePoolConfig(overrides = {}) {
   return {
     roundSeconds: int("ROUND_SECONDS", 86_400),
     drawGraceSeconds: int("DRAW_GRACE_SECONDS", 600),
-    keeperBuffer: hbar("KEEPER_BUFFER_HBAR", 5),
+    keeperBuffer: hbar("KEEPER_BUFFER_HBAR", 8),
     minDeposit: hbar("MIN_DEPOSIT_HBAR", 10),
     maxParticipants: int("MAX_PARTICIPANTS", 100),
     drawGasLimit: int("DRAW_GAS_LIMIT", 3_000_000),
