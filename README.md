@@ -15,7 +15,7 @@ npm create scaffold-hbar@latest -- --template nickthelegend/scaffold-hbar-prize-
 
 | | |
 |---|---|
-| Live app | <https://app-production-999e.up.railway.app> (reads the testnet pool) |
+| Live app | <https://scaffold-hbar-prize-savings.vercel.app> (reads the testnet pool) |
 | Live pool (testnet) | [`0.0.10844239`](https://hashscan.io/testnet/contract/0.0.10844239) · every interaction is linked in [Testnet proof](#testnet-proof) |
 | Stack | Next.js App Router · RainbowKit/wagmi/viem · Foundry · Hiero SDK · Yarn workspaces |
 | Hedera services | Staking · Schedule Service (HIP-1215) · PRNG (HIP-351) · Token Service · Mirror Node |
@@ -457,7 +457,7 @@ No secret is read by the frontend. Never commit `.env` files; they are git-ignor
 Everything below happened on **Hedera testnet** and can be checked on HashScan. The interactions were made with
 [`yarn foundry:demo`](#deploy-your-own-pool) against the deployed pool; nothing is simulated.
 
-**Live app:** <https://app-production-999e.up.railway.app> (the template's frontend, unmodified, pointed at this pool)
+**Live app:** <https://scaffold-hbar-prize-savings.vercel.app> (the template's frontend, unmodified, pointed at this pool)
 
 **Deployment** (`yarn foundry:deploy --network testnet`, `ROUND_SECONDS=3600`)
 
@@ -482,7 +482,7 @@ Everything below happened on **Hedera testnet** and can be checked on HashScan. 
 | 8 | `0.0.10844275` withdraws 5 HBAR of principal; the matching tickets are wiped | Smart contracts, HTS | [withdraw](https://hashscan.io/testnet/transaction/1791047155.627483104) |
 
 Nobody called `draw()` in step 7: the transaction was triggered by the schedule from step 2, which the contract created
-and paid for itself. The [Past draws](https://app-production-999e.up.railway.app) table in the live app reads the same
+and paid for itself. The [Past draws](https://scaffold-hbar-prize-savings.vercel.app) table in the live app reads the same
 event from the mirror node.
 <!-- PROOF:END -->
 
