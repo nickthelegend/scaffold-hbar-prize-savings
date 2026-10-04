@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/nickthelegend/scaffold-hbar-prize-savings/actions/workflows/ci.yaml/badge.svg)](https://github.com/nickthelegend/scaffold-hbar-prize-savings/actions/workflows/ci.yaml): every push plays a full round (deposit → frozen HTS tickets → network-executed scheduled draw → PRNG winner → withdraw) on a real Hedera network.
 
-**[Demo video (72s)](https://github.com/nickthelegend/scaffold-hbar-prize-savings/releases/download/demo-video/prize-savings-demo.mp4)**
+**[Demo video (72s)](https://scaffold-hbar-demos.vercel.app/prize-savings.mp4)**
 
 Deposit HBAR, withdraw it whenever you like, and win the yield it earns. Principal is reserved: it is never used for
 prizes or fees. Every round, the pool's **native staking rewards** (plus any sponsor boosts) go to one depositor,
@@ -10,7 +10,7 @@ picked by **Hedera's PRNG** in a draw that the contract **schedules for itself**
 Deposits are mirrored as **non-transferable HTS tickets**.
 
 ```bash
-npm create scaffold-hbar@latest -- --template nickthelegend/scaffold-hbar-prize-savings
+npm create scaffold-hbar@latest -- --template nickthelegend/scaffold-hbar-prize-savings --package-manager yarn
 ```
 
 | | |
@@ -75,7 +75,7 @@ testnet pool (see [Testnet proof](#testnet-proof)) you can use the app before de
 at that address on the selected chain, the app says so and shows the deploy command.
 
 ```bash
-npm create scaffold-hbar@latest -- --template nickthelegend/scaffold-hbar-prize-savings
+npm create scaffold-hbar@latest -- --template nickthelegend/scaffold-hbar-prize-savings --package-manager yarn
 cd my-hedera-dapp
 yarn next:dev            # http://localhost:3000
 ```
@@ -171,17 +171,33 @@ prize = address(this).balance − totalPrincipal − keeperBuffer
 
 ### The fee reserve
 
-A scheduled draw is paid for by the contract itself (gas limit × gas price is held up front; see
-[Costs](#costs-and-sizing)). So that this
-never touches principal, `_scheduleDraw` only creates a schedule when there are savers **and**
-`balance ≥ totalPrincipal + keeperBuffer`; otherwise it emits `DrawNotScheduled(round, reason)`. `keeperBuffer` must
-cover a draw's fee (the deploy script warns below two fees). Consequences:
+A scheduled draw is paid for by the contract itself: the network takes gas limit × gas price from its balance before
+the draw runs and refunds the unused part afterwards (see [Costs](#costs-and-sizing)). So that this never touches
+principal, a schedule is only created when there are savers **and** the balance covers principal plus the reserve
+(`keeperBuffer`); otherwise the contract emits `DrawNotScheduled(round, reason)`.
 
-- An empty pool schedules nothing and pays nothing. The next deposit restarts the round and schedules its draw.
-- If the surplus runs out, scheduling stops. A boost that refills the reserve schedules the round's draw, and anyone
-  can `triggerDraw()` with a top-up after the grace period.
-- When the last saver leaves, the draw already scheduled for that round still runs once (a rollover), then scheduling
-  stops.
+Inside the scheduled draw itself, that draw's own up-front fee is already gone from the balance, so the draw only needs
+**half** the reserve to schedule the next round: the other half stands in for the fee in flight. That's why
+`keeperBuffer` must cover **two** draws' up-front fees, and why the deploy script refuses less (default 8 HBAR; at 3M
+gas and 87 tinybar/gas one up-front fee is 2.61 HBAR). Consequences:
+
+- **A pool with savers keeps itself going while yield and boosts cover the fees.** Each draw costs the gas it uses
+  (≈ 1.6M gas, ≈ 1.4 HBAR at testnet's 87 tinybar/gas). Fees come out of the surplus first (a round whose surplus
+  doesn't cover the fee rolls over with no prize), then out of the reserve.
+- **When the reserve can no longer cover the next fee, scheduling stops** before principal is touched. The round's
+  page then offers *Schedule draw* (`triggerDraw()`, which tops the reserve up with what's missing after the grace
+  period), and any deposit or boost that leaves the reserve covered schedules the draw immediately.
+- **An empty pool schedules nothing and pays nothing.** The next deposit starts a round and schedules its draw. When
+  the last saver leaves, the draw already scheduled for that round still runs once (a rollover), then scheduling stops.
+- **Budget for a demo pool.** Rounds cost ≈ 1.4 HBAR each in gas whether or not anyone wins, so hourly rounds cost
+  ≈ 34 HBAR a day. Testnet staking yield is tiny, so a public testnet demo with short rounds is effectively funded by
+  boosts; daily rounds cost ≈ 1.4 HBAR a day.
+
+> The testnet pool in [Testnet proof](#testnet-proof) was deployed before this fix, with `keeperBuffer` = 5 HBAR (less
+> than two fees). Its draws require the full reserve, so it stops after any round that rolls over, which with
+> boost-only funding is every other round. Anyone can restart it from the app with *Schedule draw*, or by depositing or
+> boosting so the surplus covers the next fee. A contract has no admin key, so the fix only applies to pools
+> deployed from this version.
 
 ### Fair odds: balance × time
 
@@ -294,8 +310,9 @@ local node a draw with the default 3M limit used 1.60M gas and cost the pool a n
 by that transaction's sender, which is why the frontend gives those calls extra gas only when they will schedule
 (`utils/prize-savings/gas.ts`).
 
-**Fee reserve.** `KEEPER_BUFFER_HBAR` (default 5) must cover the up-front charge of a draw, `DRAW_GAS_LIMIT` × gas
-price (≈ 2.1 HBAR at 3M and 71 tinybar/gas); the deploy script warns below twice that.
+**Fee reserve.** `KEEPER_BUFFER_HBAR` (default 8) must cover two draws' up-front charges, 2 × `DRAW_GAS_LIMIT` × gas
+price (≈ 5.2 HBAR at 3M and testnet's 87 tinybar/gas); the deploy script refuses less. See
+[The fee reserve](#the-fee-reserve) for why two.
 
 **Deployment.** `ContractCreateFlow` ≈ 3.7M gas. `initialize` ≈ 259k gas plus `TICKET_FEE_HBAR` (default 15) for the
 HTS token-creation fee (about $1); none of that value comes back to the pool, so it is not part of the reserve.
@@ -492,7 +509,8 @@ event from the mirror node.
   commands, and how to extend it safely.
 - [`.harness/`](.harness/) contains a [Hedera Harness](https://github.com/hedera-dev/hedera-harness) recipe with
   validators (static checks, build, route smoke tests, on-chain deposit/withdraw), so an agent can build features on
-  top of this template and have them verified.
+  top of this template and have them verified. Run them with `yarn harness:validate` (the route gate needs a browser
+  once: `npx playwright install chromium`); CI runs them on a freshly scaffolded copy.
 
 ## License
 

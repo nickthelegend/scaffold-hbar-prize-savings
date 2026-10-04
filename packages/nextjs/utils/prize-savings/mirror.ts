@@ -131,6 +131,19 @@ export async function fetchAccount(network: HederaNetwork, idOrAddress: string):
 }
 
 /**
+ * The Hedera account id behind an EVM address, or null if it has none yet. Testnet and mainnet go through this app's
+ * `/api/hedera/account` route, which turns the mirror node's 404 for a brand-new address (every fresh burner wallet)
+ * into `{ accountId: null }`, so visitors' consoles don't show a failed request. A local node's mirror is queried
+ * directly.
+ */
+export async function resolveAccountId(network: HederaNetwork, evmAddress: string): Promise<string | null> {
+  if (network === "local") return (await fetchAccount(network, evmAddress))?.account ?? null;
+  const res = await fetch(`/api/hedera/account?network=${network}&evm=${evmAddress}`);
+  if (!res.ok) throw new Error(`Account lookup failed (${res.status})`);
+  return ((await res.json()) as { accountId: string | null }).accountId;
+}
+
+/**
  * Whether a deposit needs an explicit `associate()` first. The mirror node reports an account's auto-association limit
  * but not how many slots are used, so only an unlimited limit (-1) is trusted to cover a new token.
  */

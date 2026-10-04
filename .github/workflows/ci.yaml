@@ -96,3 +96,9 @@ jobs:
       - name: Test, type-check, build and lint the scaffolded project
         working-directory: judge
         run: yarn foundry:test && yarn next:test && yarn next:check-types && yarn next:build && yarn lint
+
+      - name: Hedera Harness validators on the scaffolded project
+        working-directory: judge
+        run: |
+          npx playwright install --with-deps chromium
+          yarn harness:validate

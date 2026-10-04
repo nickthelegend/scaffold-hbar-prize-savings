@@ -1,7 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTargetNetwork } from "~~/hooks/scaffold-hbar";
 import { entityIdFromAddress } from "~~/utils/prize-savings/entities";
-import { fetchAccount, isAssociated, needsAssociation, networkForChain } from "~~/utils/prize-savings/mirror";
+import {
+  fetchAccount,
+  isAssociated,
+  needsAssociation,
+  networkForChain,
+  resolveAccountId,
+} from "~~/utils/prize-savings/mirror";
 
 /**
  * On Hedera an account must be associated with a token before it can hold it. Accounts with unlimited automatic
@@ -18,7 +24,8 @@ export const useTicketAssociation = (address?: string, ticket?: string, { pollFa
     enabled: Boolean(address && ticket && ticket !== "0x0000000000000000000000000000000000000000"),
     refetchInterval: pollFast ? 2_000 : 20_000,
     queryFn: async () => {
-      const account = await fetchAccount(network, address!);
+      const accountId = await resolveAccountId(network, address!);
+      const account = accountId ? await fetchAccount(network, accountId) : null;
       if (!account) return { accountExists: false, needsAssociation: false };
       const associated = await isAssociated(network, account.account, entityIdFromAddress(ticket!));
       return { accountExists: true, needsAssociation: needsAssociation(account, associated) };

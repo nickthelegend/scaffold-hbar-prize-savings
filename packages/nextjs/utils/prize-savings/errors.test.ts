@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { friendlyTxError } from "./errors";
+import { describe, expect, it } from "vitest";
 
 describe("friendlyTxError", () => {
   it("explains a withdrawal above the deposit, in HBAR", () => {

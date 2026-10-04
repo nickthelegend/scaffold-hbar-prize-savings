@@ -40,7 +40,8 @@ const POOL_ERRORS: Record<string, (arg: string) => string> = {
  * into a sentence, or returns it unchanged when it isn't one of ours.
  */
 export const friendlyTxError = (message: string): string => {
-  if (/user (rejected|denied)|rejected the request/i.test(message)) return "You cancelled the transaction in your wallet.";
+  if (/user (rejected|denied)|rejected the request/i.test(message))
+    return "You cancelled the transaction in your wallet.";
   const match = /\b([A-Z][A-Za-z]+)\((-?\d*)/.exec(message);
   const describe = match && POOL_ERRORS[match[1]];
   return describe ? describe(match[2]) : message;

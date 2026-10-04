@@ -7725,6 +7725,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"hedera-harness@npm:1.2.2":
+  version: 1.2.2
+  resolution: "hedera-harness@npm:1.2.2"
+  dependencies:
+    yaml: ^2.9.0
+  peerDependencies:
+    "@hiero-ledger/sdk": ^2.86.2
+    playwright: ^1.61.1
+  peerDependenciesMeta:
+    "@hiero-ledger/sdk":
+      optional: true
+    playwright:
+      optional: true
+  bin:
+    hedera-harness: dist/index.js
+  checksum: a3033d232d4de0d95da80283a04d313b76c06069b79e61f41034e48fcd1ceb624b5ef03718ea4904f8165cd27a3a25aea925889aa513dde1042a17dbc210eb63
+  languageName: node
+  linkType: hard
+
 "help-me@npm:^5.0.0":
   version: 5.0.0
   resolution: "help-me@npm:5.0.0"
@@ -9893,6 +9912,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"playwright-core@npm:1.63.0":
+  version: 1.63.0
+  resolution: "playwright-core@npm:1.63.0"
+  bin:
+    playwright-core: cli.js
+  checksum: b4c190c4099d0620a9ba22a0e826194ad511c3149153a79c44dc632ac2058da7da01cf66f011ee3ee0f360bbd83aa2f67f04519eb3c7c2bea257c4f598537937
+  languageName: node
+  linkType: hard
+
+"playwright@npm:^1.58.0":
+  version: 1.63.0
+  resolution: "playwright@npm:1.63.0"
+  dependencies:
+    playwright-core: 1.63.0
+  bin:
+    playwright: cli.js
+  checksum: 6f90bca3d61f509667b9fdc4ef9c845833e4cb3cbb1c0d4e26672efb66b97b7f7db47d6a947a66772a23c191859639a6db0211c7753e6a1a5bc42293fd226c5a
+  languageName: node
+  linkType: hard
+
 "pngjs@npm:^5.0.0":
   version: 5.0.0
   resolution: "pngjs@npm:5.0.0"
@@ -10032,8 +10071,10 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "prize-savings@workspace:."
   dependencies:
+    hedera-harness: 1.2.2
     husky: ^9.1.6
     lint-staged: ^15.2.10
+    playwright: ^1.58.0
   languageName: unknown
   linkType: soft
 
@@ -12657,6 +12698,15 @@ __metadata:
   bin:
     yaml: bin.mjs
   checksum: 5ffd9f23bc7a450129cbd49dcf91418988f154ede10c83fd28ab293661ac2783c05da19a28d76a22cbd77828eae25d4bd7453f9a9fe2d287d085d72db46fd105
+  languageName: node
+  linkType: hard
+
+"yaml@npm:^2.9.0":
+  version: 2.9.1
+  resolution: "yaml@npm:2.9.1"
+  bin:
+    yaml: bin.mjs
+  checksum: 583253ce0075cc1b7a4328116380ae2a97d6feb62677ba5d52f7cb774de6e34f1d9e655aaa536347ced55fcaede020253212d1c60c98fc672d43be23ebfcd862
   languageName: node
   linkType: hard
 

@@ -1,16 +1,18 @@
 {
   "name": "prize-savings-static",
-  "description": "Structure, manifest and safety invariants of the Prize Savings template.",
+  "description": "Structure, manifest and safety invariants of the Prize Savings template. Works on the template repo and on a freshly scaffolded project; env files are covered by .gitignore rather than forbidden locally.",
   "jsonAssertions": [
-    { "file": "package.json", "path": "packageManager", "equals": "yarn@3.2.3" },
-    { "file": "template.json", "path": "name", "equals": "prize-savings" }
+    {
+      "file": "package.json",
+      "path": "packageManager",
+      "equals": "yarn@3.2.3"
+    }
   ],
   "fileAssertions": {
     "required": [
       "README.md",
       "AGENTS.md",
       "LICENCE",
-      "template.json",
       "package.json",
       "packages/foundry/contracts/PrizePool.sol",
       "packages/foundry/scripts-js/deployPrizePool.js",
@@ -24,14 +26,47 @@
       ".harness/spec.yaml",
       ".harness/prd.md"
     ],
-    "forbidden": [".env", "packages/foundry/.env", "packages/nextjs/.env", "packages/nextjs/.env.local", "packages/hardhat"]
+    "forbidden": [
+      "packages/hardhat"
+    ]
   },
   "textAssertions": [
-    { "file": "README.md", "contains": ["npm create scaffold-hbar@latest", "yarn foundry:deploy", "Testnet proof"] },
-    { "file": "AGENTS.md", "contains": ["Invariants you must preserve", "tinybars"] },
+    {
+      "file": "README.md",
+      "contains": [
+        "npm create scaffold-hbar@latest",
+        "yarn foundry:deploy",
+        "Testnet proof"
+      ]
+    },
+    {
+      "file": "AGENTS.md",
+      "contains": [
+        "Invariants you must preserve",
+        "tinybars"
+      ]
+    },
     {
       "file": "packages/foundry/contracts/PrizePool.sol",
-      "contains": ["nonReentrant", "hasScheduleCapacity", "getPseudorandomSeed", "freezeToken"]
+      "contains": [
+        "nonReentrant",
+        "hasScheduleCapacity",
+        "getPseudorandomSeed",
+        "freezeToken"
+      ]
+    },
+    {
+      "file": "packages/nextjs/.gitignore",
+      "contains": [
+        ".env",
+        ".env.local"
+      ]
+    },
+    {
+      "file": "packages/foundry/.gitignore",
+      "contains": [
+        ".env"
+      ]
     }
   ]
 }

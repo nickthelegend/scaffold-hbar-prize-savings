@@ -117,4 +117,5 @@ explains the Hedera-specific *why*. Comments should add information.
 - **USD display:** read Chainlink's HBAR/USD feed on Hedera testnet (`0x59bC155EB6c6C415fE43255aF66EcF0523c92B4a`)
   via `externalContracts.ts`.
 - After changing the contract, run `yarn foundry:test` and `yarn foundry:test:e2e`, redeploy with
-  `yarn foundry:deploy`, and run the harness validators (`yarn harness:validate`).
+  `yarn foundry:deploy`, and run the harness validators (`yarn harness:validate`; its route gate needs a browser
+  once: `npx playwright install chromium`). CI runs them on a freshly scaffolded copy.
