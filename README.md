@@ -480,7 +480,7 @@ Everything below happened on **Hedera testnet** and can be checked on HashScan. 
 
 | What | Link |
 |---|---|
-| PrizePool contract `0.0.10844239` (`0x…a5784f`), no admin key | [contract](https://hashscan.io/testnet/contract/0.0.10844239) |
+| PrizePool contract `0.0.10844239` (`0x…a5784f`), no admin key; source verified on Sourcify (exact match, deployed from commit `658e3a9`) | [contract](https://hashscan.io/testnet/contract/0.0.10844239) · [source](https://repo.sourcify.dev/296/0x0000000000000000000000000000000000a5784f) |
 | Created with `ContractCreateFlow` and a staking election: staked to node 3 | [ContractCreate](https://hashscan.io/testnet/transaction/1791043532.641639104) · [mirror: `staked_node_id`](https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.10844239) |
 | `initialize()` creates the PST ticket token `0.0.10844240` (freeze, wipe and supply keys held by the pool, no admin key) and opens round 1 | [initialize](https://hashscan.io/testnet/transaction/1791043535.521640104) · [token](https://hashscan.io/testnet/token/0.0.10844240) |
 | 10 HBAR seed of the fee reserve | [boostPrize](https://hashscan.io/testnet/transaction/1791043536.961552104) |
