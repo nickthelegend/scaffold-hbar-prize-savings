@@ -119,7 +119,7 @@ export const SavePanel = () => {
               key={m.id}
               role="tab"
               aria-selected={mode === m.id}
-              className={`tab flex-1 ${mode === m.id ? "tab-active" : ""}`}
+              className={`tab flex-1 whitespace-nowrap px-2 ${mode === m.id ? "tab-active" : ""}`}
               onClick={() => {
                 // An amount typed for one action must never carry over into another (a deposit into a boost).
                 if (m.id !== mode) setAmount("");
