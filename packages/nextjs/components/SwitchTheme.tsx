@@ -27,6 +27,7 @@ export const SwitchTheme = ({ className }: { className?: string }) => {
   return (
     <div className={`flex space-x-2 h-8 items-center justify-center text-sm ${className}`}>
       <input
+        aria-label={isDarkMode ? "Switch to light theme" : "Switch to dark theme"}
         id="theme-toggle"
         type="checkbox"
         className="toggle bg-secondary toggle-primary hover:bg-accent transition-all"

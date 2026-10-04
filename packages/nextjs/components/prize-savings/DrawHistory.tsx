@@ -16,7 +16,7 @@ export const DrawHistory = () => {
 
   return (
     <div className="card bg-base-100 border border-base-300 shadow-md">
-      <div className="card-body gap-4">
+      <div className="card-body px-4 sm:px-8 gap-4">
         <h2 className="card-title m-0 text-lg">Past draws</h2>
         {isLoading ? (
           <div className="h-40 rounded-xl bg-base-200 animate-pulse" aria-label="Loading draws" />
@@ -33,20 +33,35 @@ export const DrawHistory = () => {
           <>
             <PrizeChart draws={draws.slice(0, CHART_ROUNDS).reverse()} />
             <div className="overflow-x-auto">
-              <table className="table table-sm">
+              <table className="table table-xs sm:table-sm">
                 <thead>
                   <tr>
                     <th>Round</th>
                     <th>Result</th>
-                    <th className="text-right">Prize</th>
-                    <th className="text-right">Savers</th>
-                    <th className="text-right">Proof</th>
+                    <th className="text-right">
+                      <span className="sm:hidden">HBAR</span>
+                      <span className="hidden sm:inline">Prize</span>
+                    </th>
+                    <th className="hidden text-right sm:table-cell">Savers</th>
+                    <th className="hidden text-right sm:table-cell">Proof</th>
                   </tr>
                 </thead>
                 <tbody>
                   {draws.map(draw => (
                     <tr key={`${draw.round}-${draw.transactionHash}`}>
-                      <td className="tabular-nums">{draw.round.toString()}</td>
+                      <td className="tabular-nums">
+                        {/* On narrow screens the round number links to the proof, which has no column of its own. */}
+                        <a
+                          className="link link-primary sm:hidden"
+                          href={explorerLink(network, "transaction", draw.transactionHash)}
+                          target="_blank"
+                          rel="noreferrer"
+                          aria-label={`Round ${draw.round} on HashScan`}
+                        >
+                          {draw.round.toString()}
+                        </a>
+                        <span className="hidden sm:inline">{draw.round.toString()}</span>
+                      </td>
                       <td>
                         {draw.kind === "won" ? (
                           <div className="inline-flex">
@@ -56,9 +71,12 @@ export const DrawHistory = () => {
                           <span className="text-base-content/60">Rolled over</span>
                         )}
                       </td>
-                      <td className="text-right tabular-nums">{formatTinybars(draw.prize)} HBAR</td>
-                      <td className="text-right tabular-nums">{draw.participants.toString()}</td>
-                      <td className="text-right">
+                      <td className="whitespace-nowrap text-right tabular-nums">
+                        {formatTinybars(draw.prize)}
+                        <span className="hidden sm:inline"> HBAR</span>
+                      </td>
+                      <td className="hidden text-right tabular-nums sm:table-cell">{draw.participants.toString()}</td>
+                      <td className="hidden text-right sm:table-cell">
                         <a
                           className="link link-primary text-xs"
                           href={explorerLink(network, "transaction", draw.transactionHash)}

@@ -3,6 +3,7 @@
 import { ClockIcon, UsersIcon, WalletIcon } from "@heroicons/react/24/outline";
 import { formatDuration, useNow } from "~~/hooks/prize-savings/useNow";
 import { usePoolState } from "~~/hooks/prize-savings/usePoolState";
+import { useSingleFlight } from "~~/hooks/prize-savings/useSingleFlight";
 import { useScaffoldWriteContract, useTargetNetwork } from "~~/hooks/scaffold-hbar";
 import { type DrawStatus, drawStatus } from "~~/utils/prize-savings/drawStatus";
 import { entityIdFromAddress } from "~~/utils/prize-savings/entities";
@@ -16,6 +17,8 @@ export const PrizeHero = () => {
   const now = useNow();
   const secondsLeft = pool.roundEnd === undefined ? undefined : Number(pool.roundEnd) - now;
   const roundOver = secondsLeft !== undefined && secondsLeft <= 0;
+  // An empty pool has no running round: the next deposit opens a fresh one (and schedules its draw).
+  const waitingForSaver = pool.participants === 0n;
 
   const status =
     pool.currentRound === undefined ||
@@ -57,8 +60,17 @@ export const PrizeHero = () => {
         </p>
 
         <div className="mt-4 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
-          <Stat icon={<ClockIcon className="h-5 w-5" />} label={roundOver ? "Round" : "Round ends in"}>
-            {secondsLeft === undefined ? "…" : roundOver ? "Ended" : formatDuration(secondsLeft)}
+          <Stat
+            icon={<ClockIcon className="h-5 w-5" />}
+            label={roundOver || waitingForSaver ? "Round" : "Round ends in"}
+          >
+            {secondsLeft === undefined || pool.participants === undefined
+              ? "…"
+              : waitingForSaver
+                ? "Not started"
+                : roundOver
+                  ? "Ended"
+                  : formatDuration(secondsLeft)}
           </Stat>
           <Stat icon={<WalletIcon className="h-5 w-5" />} label="Total saved">
             {pool.totalPrincipal === undefined ? "…" : `${formatTinybars(pool.totalPrincipal, 2)} HBAR`}
@@ -78,15 +90,21 @@ export const PrizeHero = () => {
 const DrawState = ({ status, now }: { status: DrawStatus; now: number }) => {
   const { targetNetwork } = useTargetNetwork();
   const { writeContractAsync, isPending } = useScaffoldWriteContract({ contractName: "PrizePool" });
+  const { run, running } = useSingleFlight();
   const network = networkForChain(targetNetwork.id);
 
-  const trigger = async (topUp: bigint) => {
-    try {
-      await writeContractAsync({ functionName: "triggerDraw", value: tinybarsToWeibars(topUp), gas: GAS.triggerDraw });
-    } catch {
-      // useTransactor already showed the error (including a rejected signature).
-    }
-  };
+  const trigger = (topUp: bigint) =>
+    run(async () => {
+      try {
+        await writeContractAsync({
+          functionName: "triggerDraw",
+          value: tinybarsToWeibars(topUp),
+          gas: GAS.triggerDraw,
+        });
+      } catch {
+        // useTransactor already showed the error (including a rejected signature).
+      }
+    });
 
   switch (status.kind) {
     case "scheduled": {
@@ -127,8 +145,12 @@ const DrawState = ({ status, now }: { status: DrawStatus; now: number }) => {
             schedule it now; the network picks the winner a few seconds later.
             {status.topUp > 0n && ` This adds ${formatTinybars(status.topUp)} HBAR to cover the fee reserve.`}
           </p>
-          <button className="btn btn-sm btn-secondary" disabled={isPending} onClick={() => trigger(status.topUp)}>
-            {isPending ? <span className="loading loading-spinner loading-xs" /> : "Schedule draw"}
+          <button
+            className="btn btn-sm btn-secondary"
+            disabled={isPending || running}
+            onClick={() => trigger(status.topUp)}
+          >
+            {isPending || running ? <span className="loading loading-spinner loading-xs" /> : "Schedule draw"}
           </button>
         </div>
       );

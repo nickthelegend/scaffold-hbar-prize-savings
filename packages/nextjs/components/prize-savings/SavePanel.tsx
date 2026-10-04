@@ -6,6 +6,7 @@ import { formatEther } from "viem";
 import { useAccount, useBalance, useWriteContract } from "wagmi";
 import { usePoolState } from "~~/hooks/prize-savings/usePoolState";
 import { usePosition } from "~~/hooks/prize-savings/usePosition";
+import { useSingleFlight } from "~~/hooks/prize-savings/useSingleFlight";
 import { useTicketAssociation } from "~~/hooks/prize-savings/useTicketAssociation";
 import { useScaffoldWriteContract, useTransactor } from "~~/hooks/scaffold-hbar";
 import { GAS, boostGas, depositGas, willScheduleDraw } from "~~/utils/prize-savings/gas";
@@ -43,6 +44,7 @@ export const SavePanel = () => {
   const { writeContractAsync, isPending } = useScaffoldWriteContract({ contractName: "PrizePool" });
   const { writeContractAsync: writeToken, isPending: isAssociating } = useWriteContract();
   const transactor = useTransactor();
+  const { run, running } = useSingleFlight();
 
   // Stop fast polling once the mirror node reports the association.
   useEffect(() => {
@@ -67,34 +69,36 @@ export const SavePanel = () => {
             : undefined;
 
   // Explicit gas limits: HTS-heavy calls are sized from measurements (see utils/prize-savings/gas.ts).
-  const submit = async () => {
-    if (!valid || error) return;
-    try {
-      // Wallets send `value` in weibars (18 decimals); the contract receives tinybars (8 decimals).
-      if (mode === "deposit") {
-        const gas = depositGas(balance !== undefined && balance > 0n, willScheduleDraw(pool));
-        await writeContractAsync({ functionName: "deposit", value: hbarToWeibars(amount), gas });
+  const submit = () =>
+    run(async () => {
+      if (!valid || error) return;
+      try {
+        // Wallets send `value` in weibars (18 decimals); the contract receives tinybars (8 decimals).
+        if (mode === "deposit") {
+          const gas = depositGas(balance !== undefined && balance > 0n, willScheduleDraw(pool));
+          await writeContractAsync({ functionName: "deposit", value: hbarToWeibars(amount), gas });
+        }
+        if (mode === "boost")
+          await writeContractAsync({ functionName: "boostPrize", value: hbarToWeibars(amount), gas: boostGas(pool) });
+        if (mode === "withdraw")
+          await writeContractAsync({ functionName: "withdraw", args: [tinybars], gas: GAS.withdraw });
+        setAmount("");
+      } catch {
+        // useTransactor already showed the error (including a rejected signature).
       }
-      if (mode === "boost")
-        await writeContractAsync({ functionName: "boostPrize", value: hbarToWeibars(amount), gas: boostGas(pool) });
-      if (mode === "withdraw")
-        await writeContractAsync({ functionName: "withdraw", args: [tinybars], gas: GAS.withdraw });
-      setAmount("");
-    } catch {
-      // useTransactor already showed the error (including a rejected signature).
-    }
-  };
+    });
 
-  const associate = async () => {
-    try {
-      await transactor(() =>
-        writeToken({ address: ticket!, abi: HRC719_ABI, functionName: "associate", gas: GAS.associate }),
-      );
-      setAwaitingAssociation(true);
-    } catch {
-      // Notified by useTransactor.
-    }
-  };
+  const associate = () =>
+    run(async () => {
+      try {
+        await transactor(() =>
+          writeToken({ address: ticket!, abi: HRC719_ABI, functionName: "associate", gas: GAS.associate }),
+        );
+        setAwaitingAssociation(true);
+      } catch {
+        // Notified by useTransactor.
+      }
+    });
 
   const active = MODES.find(m => m.id === mode)!;
   const checkingAssociation = mode === "deposit" && !association.data;
@@ -158,7 +162,11 @@ export const SavePanel = () => {
             <HederaPortalFaucet variant="link" label="portal.hedera.com/faucet" showIcon={false} />
           </div>
         ) : needsAssociation ? (
-          <button className="btn btn-secondary" disabled={isAssociating || awaitingAssociation} onClick={associate}>
+          <button
+            className="btn btn-secondary"
+            disabled={running || isAssociating || awaitingAssociation}
+            onClick={associate}
+          >
             {isAssociating || awaitingAssociation ? (
               <span className="loading loading-spinner loading-sm" />
             ) : (
@@ -166,8 +174,12 @@ export const SavePanel = () => {
             )}
           </button>
         ) : (
-          <button className="btn btn-primary" disabled={!valid || Boolean(error) || isPending} onClick={submit}>
-            {isPending ? <span className="loading loading-spinner loading-sm" /> : active.label}
+          <button
+            className="btn btn-primary"
+            disabled={!valid || Boolean(error) || isPending || running}
+            onClick={submit}
+          >
+            {isPending || running ? <span className="loading loading-spinner loading-sm" /> : active.label}
           </button>
         )}
       </div>
