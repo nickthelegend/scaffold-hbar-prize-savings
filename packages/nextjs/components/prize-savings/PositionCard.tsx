@@ -27,7 +27,13 @@ export const PositionCard = () => {
               {userWeight === undefined || totalWeight === undefined ? "…" : formatShare(userWeight, totalWeight)}
             </Item>
             <Item label="Tickets (PST)">{balance === undefined ? "…" : formatTinybars(balance)}</Item>
-            <Item label="If you win">{prize === undefined ? "…" : `+${formatTinybars(prize)} HBAR`}</Item>
+            <Item label="If you win">
+              {prize === undefined || balance === undefined
+                ? "…"
+                : balance === 0n
+                  ? "Deposit to enter"
+                  : `+${formatTinybars(prize)} HBAR`}
+            </Item>
           </dl>
         )}
         <p className="m-0 text-xs text-base-content/60">

@@ -15,7 +15,8 @@ npm create scaffold-hbar@latest -- --template nickthelegend/scaffold-hbar-prize-
 
 | | |
 |---|---|
-| Live pool (testnet) | see [Testnet proof](#testnet-proof) |
+| Live app | <https://app-production-999e.up.railway.app> (reads the testnet pool) |
+| Live pool (testnet) | [`0.0.10844239`](https://hashscan.io/testnet/contract/0.0.10844239) · every interaction is linked in [Testnet proof](#testnet-proof) |
 | Stack | Next.js App Router · RainbowKit/wagmi/viem · Foundry · Hiero SDK · Yarn workspaces |
 | Hedera services | Staking · Schedule Service (HIP-1215) · PRNG (HIP-351) · Token Service · Mirror Node |
 
@@ -110,6 +111,18 @@ which:
 
 Why not `forge script`? Only the HAPI `ContractCreate` transaction can set a staking election. A contract deployed
 over JSON-RPC has none, and because this one deliberately has no admin key, it could never get one later.
+
+Then prove it works, on the real network, with one command:
+
+```bash
+DEPLOYER_KEYSTORE_PASSWORD=... yarn foundry:demo --network testnet --keystore <name>
+```
+
+[`demoRound.js`](packages/foundry/scripts-js/demoRound.js) plays one round against your pool and records a HashScan link
+for every step: your deposit (which schedules the draw), a second saver it creates and funds, a sponsor boost, a ticket
+transfer that reverts because holdings are frozen, the draw the network executes when the round ends, and a partial
+withdrawal. It resumes where it stopped if interrupted, and writes the links to `deployments/proof-<chainId>.json`.
+That is exactly how the [Testnet proof](#testnet-proof) below was produced.
 
 Tune a deployment with env vars (in `packages/foundry/.env` or inline):
 
@@ -287,6 +300,20 @@ price (≈ 2.1 HBAR at 3M and 71 tinybar/gas); the deploy script warns below twi
 **Deployment.** `ContractCreateFlow` ≈ 3.7M gas. `initialize` ≈ 259k gas plus `TICKET_FEE_HBAR` (default 15) for the
 HTS token-creation fee (about $1); none of that value comes back to the pool, so it is not part of the reserve.
 
+**What the testnet deployment actually cost (October 2026): ≈ 70 HBAR.** Budget for it before you deploy:
+
+| Step | HBAR |
+|---|---|
+| Upload the bytecode: `FileCreate` + 8 × `FileAppend` (4 KB chunks, ≈ 3.8 HBAR each) | ≈ 32.5 |
+| `ContractCreate` with the staking election | ≈ 12.8 |
+| `initialize`: HTS token creation (`TICKET_FEE_HBAR`) + gas | ≈ 15.2 |
+| Seed of the fee reserve (`KEEPER_SEED_HBAR`, stays in the pool) | 10 |
+
+The bytecode upload dominates. `ContractCreateFlow` uploads through the File Service because only the HAPI
+`ContractCreate` can set a staking election (see above), and testnet's file fees are currently far higher than its
+gas fees. Then `yarn foundry:demo` (a deposit that schedules the draw, a second saver, a boost) needs about 25 HBAR more,
+most of it deposits that stay withdrawable.
+
 **Round length.** Staking rewards accrue per 24-hour period, so rounds shorter than a day mostly roll over and spend
 fees. The default is 24 hours; the public testnet demo uses shorter rounds so visitors can watch draws happen.
 Testnet pays about 0.19% a year in staking rewards (`/api/v1/network/stake`), so testnet prizes come mostly from
@@ -418,11 +445,45 @@ No secret is read by the frontend. Never commit `.env` files; they are git-ignor
 11. **Fork tests can't exercise Hedera services.** A Foundry fork runs in a local EVM, where `0x167`, `0x16b` and
     `0x169` don't exist, and Hashio returns runtime bytecode with immutables zeroed. This template tests Hedera
     behaviour on a real network (local node or testnet) instead.
+12. **ethers v5 and Hashio.** The network name `testnet` is reserved by ethers v5 (it means an Ethereum testnet), so
+    scripts name the provider `hedera-testnet`. ethers' EIP-1559 fee estimate can come out below Hedera's minimum gas
+    price and the relay rejects the transaction, so `yarn foundry:demo` sends `eth_gasPrice` explicitly.
+13. **A new account can't send through the relay straight away.** The JSON-RPC relay looks senders up on the mirror
+    node, which lags `AccountCreate` by a few seconds; wait for the mirror record before the first transaction.
 
 ## Testnet proof
 
 <!-- PROOF:START -->
-Deployment pending.
+Everything below happened on **Hedera testnet** and can be checked on HashScan. The interactions were made with
+[`yarn foundry:demo`](#deploy-your-own-pool) against the deployed pool; nothing is simulated.
+
+**Live app:** <https://app-production-999e.up.railway.app> (the template's frontend, unmodified, pointed at this pool)
+
+**Deployment** (`yarn foundry:deploy --network testnet`, `ROUND_SECONDS=3600`)
+
+| What | Link |
+|---|---|
+| PrizePool contract `0.0.10844239` (`0x…a5784f`), no admin key | [contract](https://hashscan.io/testnet/contract/0.0.10844239) |
+| Created with `ContractCreateFlow` and a staking election: staked to node 3 | [ContractCreate](https://hashscan.io/testnet/transaction/1791043532.641639104) · [mirror: `staked_node_id`](https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.10844239) |
+| `initialize()` creates the PST ticket token `0.0.10844240` (freeze, wipe and supply keys held by the pool, no admin key) and opens round 1 | [initialize](https://hashscan.io/testnet/transaction/1791043535.521640104) · [token](https://hashscan.io/testnet/token/0.0.10844240) |
+| 10 HBAR seed of the fee reserve | [boostPrize](https://hashscan.io/testnet/transaction/1791043536.961552104) |
+
+**One full round, step by step**
+
+| # | What happened | Hedera service | Link |
+|---|---|---|---|
+| 1 | `0.0.10844208` deposits 10 HBAR. As the round's first deposit, it makes the contract schedule its own draw | Smart contracts, HTS | [deposit](https://hashscan.io/testnet/transaction/1791043695.920828068) |
+| 2 | The draw schedule the contract created for itself (`scheduleCall`, HIP-1215), due at the round's end | Schedule Service | [schedule `0.0.10844273`](https://hashscan.io/testnet/schedule/0.0.10844273) |
+| 3 | A second saver `0.0.10844275` is created (ECDSA alias, unlimited auto-association) | Accounts | [account](https://hashscan.io/testnet/account/0.0.10844275) |
+| 4 | `0.0.10844275` deposits 10 HBAR and receives 10 PST tickets, frozen in its account | Smart contracts, HTS | [deposit](https://hashscan.io/testnet/transaction/1791043742.960580104) |
+| 5 | A sponsor boosts the prize by 1 HBAR | Smart contracts | [boostPrize](https://hashscan.io/testnet/transaction/1791043749.543225277) |
+| 6 | `0.0.10844275` tries to transfer a ticket: **reverted**, because the holding is frozen | HTS | [failed transfer](https://hashscan.io/testnet/transaction/1791043756.344383100) |
+| 7 | At the round's end **the network executes the scheduled draw**; the PRNG seed picks `0.0.10844275`, who wins **6.86 HBAR** (added to their deposit) | Schedule Service, PRNG, HTS | [draw](https://hashscan.io/testnet/transaction/1791047139.007680208) |
+| 8 | `0.0.10844275` withdraws 5 HBAR of principal; the matching tickets are wiped | Smart contracts, HTS | [withdraw](https://hashscan.io/testnet/transaction/1791047155.627483104) |
+
+Nobody called `draw()` in step 7: the transaction was triggered by the schedule from step 2, which the contract created
+and paid for itself. The [Past draws](https://app-production-999e.up.railway.app) table in the live app reads the same
+event from the mirror node.
 <!-- PROOF:END -->
 
 ## Working with AI agents

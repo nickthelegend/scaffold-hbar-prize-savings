@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { HederaPortalFaucet } from "@scaffold-hbar-ui/components";
-import { useAccount, useWriteContract } from "wagmi";
+import { formatEther } from "viem";
+import { useAccount, useBalance, useWriteContract } from "wagmi";
 import { usePoolState } from "~~/hooks/prize-savings/usePoolState";
 import { usePosition } from "~~/hooks/prize-savings/usePosition";
 import { useTicketAssociation } from "~~/hooks/prize-savings/useTicketAssociation";
@@ -32,6 +33,8 @@ export const SavePanel = () => {
   const pool = usePoolState();
   const { ticket, minDeposit } = pool;
   const { balance } = usePosition(address);
+  // The relay reports wallet balances in weibars (18 decimals), the same unit a transaction's `value` is sent in.
+  const { data: wallet } = useBalance({ address, query: { refetchInterval: 15_000 } });
   const [awaitingAssociation, setAwaitingAssociation] = useState(false);
   const association = useTicketAssociation(address, ticket, { pollFast: awaitingAssociation });
   const [mode, setMode] = useState<Mode>("deposit");
@@ -48,15 +51,20 @@ export const SavePanel = () => {
 
   const valid = isValidHbarAmount(amount);
   const tinybars = valid ? hbarToTinybars(amount) : 0n;
+  const sendsValue = mode === "deposit" || mode === "boost";
   const error = !amount
     ? undefined
     : !valid
-      ? "Enter an HBAR amount with up to 8 decimals."
+      ? "Enter a positive HBAR amount, with up to 8 decimals."
       : mode === "deposit" && minDeposit !== undefined && tinybars < minDeposit
         ? `Minimum deposit is ${formatTinybars(minDeposit)} HBAR.`
         : mode === "withdraw" && balance !== undefined && tinybars > balance
           ? `You have ${formatTinybars(balance)} HBAR deposited.`
-          : undefined;
+          : sendsValue && wallet !== undefined && hbarToWeibars(amount) >= wallet.value
+            ? `Your wallet holds ${Number(formatEther(wallet.value)).toLocaleString(undefined, {
+                maximumFractionDigits: 4,
+              })} HBAR; keep some for the network fee.`
+            : undefined;
 
   // Explicit gas limits: HTS-heavy calls are sized from measurements (see utils/prize-savings/gas.ts).
   const submit = async () => {
@@ -102,7 +110,11 @@ export const SavePanel = () => {
               role="tab"
               aria-selected={mode === m.id}
               className={`tab flex-1 ${mode === m.id ? "tab-active" : ""}`}
-              onClick={() => setMode(m.id)}
+              onClick={() => {
+                // An amount typed for one action must never carry over into another (a deposit into a boost).
+                if (m.id !== mode) setAmount("");
+                setMode(m.id);
+              }}
             >
               {m.label}
             </button>

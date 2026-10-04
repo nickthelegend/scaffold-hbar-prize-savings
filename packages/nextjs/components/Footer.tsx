@@ -21,7 +21,10 @@ export const Footer = () => {
           <div className="flex flex-col md:flex-row gap-2 pointer-events-auto">
             {nativeCurrencyPrice > 0 && (
               <div>
-                <div className="btn btn-primary btn-sm font-normal gap-1 cursor-auto">
+                <div
+                  className="btn btn-primary btn-sm font-normal gap-1 cursor-auto"
+                  title="HBAR price in USD (Hedera network exchange rate)"
+                >
                   <CurrencyDollarIcon className="h-4 w-4" />
                   <span>{nativeCurrencyPrice.toFixed(2)}</span>
                 </div>
@@ -36,7 +39,7 @@ export const Footer = () => {
         <ul className="menu menu-horizontal w-full">
           <div className="flex justify-center items-center gap-3 text-sm w-full text-base-content/60">
             <a
-              href="https://github.com/hedera-dev/scaffold-hbar"
+              href="https://github.com/nickthelegend/scaffold-hbar-prize-savings"
               target="_blank"
               rel="noreferrer"
               className="link hover:text-primary"
