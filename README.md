@@ -16,7 +16,7 @@ npm create scaffold-hbar@latest -- --template nickthelegend/scaffold-hbar-prize-
 | | |
 |---|---|
 | Live app | <https://scaffold-hbar-prize-savings.vercel.app> (reads the testnet pool) |
-| Live pool (testnet) | [`0.0.10844239`](https://hashscan.io/testnet/contract/0.0.10844239) · every interaction is linked in [Testnet proof](#testnet-proof) |
+| Live pool (testnet) | [`0.0.10854968`](https://hashscan.io/testnet/contract/0.0.10854968) · daily rounds, drawing itself through HSS · every interaction is linked in [Testnet proof](#testnet-proof) |
 | Stack | Next.js App Router · RainbowKit/wagmi/viem · Foundry · Hiero SDK · Yarn workspaces |
 | Hedera services | Staking · Schedule Service (HIP-1215) · PRNG (HIP-351) · Token Service · Mirror Node |
 
@@ -122,13 +122,29 @@ DEPLOYER_KEYSTORE_PASSWORD=... yarn foundry:demo --network testnet --keystore <n
 for every step: your deposit (which schedules the draw), a second saver it creates and funds, a sponsor boost, a ticket
 transfer that reverts because holdings are frozen, the draw the network executes when the round ends, and a partial
 withdrawal. It resumes where it stopped if interrupted, and writes the links to `deployments/proof-<chainId>.json`.
-That is exactly how the [Testnet proof](#testnet-proof) below was produced.
+That is how the first pool's round in [Testnet proof](#testnet-proof) was produced.
 
 Tune a deployment with env vars (in `packages/foundry/.env` or inline):
 
 ```bash
 ROUND_SECONDS=21600 KEEPER_SEED_HBAR=20 yarn foundry:deploy --network testnet --node 5
 ```
+
+### Keep a demo pool drawing while you're away
+
+A testnet pool funded only by boosts pays about 1.4 HBAR of gas for every draw out of its fee reserve (see
+[The fee reserve](#the-fee-reserve)). To keep a public demo drawing for a week or two without running a keeper, sign
+future boosts now and let the network execute them:
+
+```bash
+DEPLOYER_KEYSTORE_PASSWORD=... yarn foundry:schedule-boosts --network testnet --keystore <name> \
+  --amount 3 --at 2026-10-08T06:00Z --at 2026-10-10T06:00Z
+```
+
+[`scheduleBoosts.js`](packages/foundry/scripts-js/scheduleBoosts.js) sends one HAPI `ScheduleCreate` per `--at`, wrapping
+a `boostPrize()` call with `waitForExpiry`. Your account pays when each one executes (up to 62 days out), so it needs
+the HBAR then, not now. Creating each schedule costs about 1 HBAR on testnet today. This is how the live testnet pool
+in [Testnet proof](#testnet-proof) keeps drawing through the judging window.
 
 ## How it works
 
@@ -192,12 +208,16 @@ gas and 87 tinybar/gas one up-front fee is 2.61 HBAR). Consequences:
 - **Budget for a demo pool.** Rounds cost ≈ 1.4 HBAR each in gas whether or not anyone wins, so hourly rounds cost
   ≈ 34 HBAR a day. Testnet staking yield is tiny, so a public testnet demo with short rounds is effectively funded by
   boosts; daily rounds cost ≈ 1.4 HBAR a day.
+- **How long a reserve lasts.** Anything above the reserve is paid out at the next draw, so after its last prize a pool
+  holds about `keeperBuffer` + (up-front fee − draw cost) above principal. With no new money it then schedules about
+  `keeperBuffer` / (2 × draw cost) more rounds, and one last draw runs without scheduling. The live testnet pool
+  (`keeperBuffer` 12 HBAR) covers four daily rounds on its own, and [scheduled boosts](#keep-a-demo-pool-drawing-while-youre-away)
+  stretch that.
 
-> The testnet pool in [Testnet proof](#testnet-proof) was deployed before this fix, with `keeperBuffer` = 5 HBAR (less
-> than two fees). Its draws require the full reserve, so it stops after any round that rolls over, which with
-> boost-only funding is every other round. Anyone can restart it from the app with *Schedule draw*, or by depositing or
-> boosting so the surplus covers the next fee. A contract has no admin key, so the fix only applies to pools
-> deployed from this version.
+> The first testnet pool in [Testnet proof](#testnet-proof) (`0.0.10844239`) was deployed before this fix, with
+> `keeperBuffer` = 5 HBAR (less than two fees). Its draws require the full reserve, so it stops after any round that
+> rolls over, which with boost-only funding is every other round. A contract has no admin key, so the fix only applies
+> to pools deployed from this version: the live pool `0.0.10854968` was redeployed from it.
 
 ### Fair odds: balance × time
 
@@ -229,6 +249,7 @@ reserve if `reserveShortfall()` says it is short. The UI shows a "Schedule draw"
 |---|---|---|
 | **Staking** | Deposits earn network rewards with zero protocol risk | [`deployPrizePool.js`](packages/foundry/scripts-js/deployPrizePool.js) `setStakedNodeId` |
 | **Schedule Service** (HIP-1215, `0x16b`) | The contract schedules its own next `draw()`; there's no keeper bot | [`PrizePool._scheduleDraw`](packages/foundry/contracts/PrizePool.sol) |
+| **Schedule Service** (HAPI `ScheduleCreate`) | Pre-signed future `boostPrize()` calls keep a demo pool's fee reserve topped up, again without a keeper | [`scheduleBoosts.js`](packages/foundry/scripts-js/scheduleBoosts.js) |
 | **PRNG** (HIP-351, `0x169`) | Random winner from a consensus-derived seed; there's no VRF subscription | [`PrizePool.draw`](packages/foundry/contracts/PrizePool.sol) |
 | **Token Service** (`0x167`) | PST ticket token: the contract holds the supply, freeze and wipe keys; holdings are frozen so they can't be transferred | [`PrizePool._createTicket` / `_issueTickets` / `_burnTickets`](packages/foundry/contracts/PrizePool.sol) |
 | **Token association** (HIP-719) | UI checks whether the wallet must call `associate()` on the ticket token before its first deposit (anything short of unlimited auto-association must) | [`useTicketAssociation`](packages/nextjs/hooks/prize-savings/useTicketAssociation.ts) |
@@ -245,6 +266,8 @@ packages/
 │   │   └── interfaces/                   # HTS, HSS and PRNG system-contract interfaces
 │   ├── scripts-js/
 │   │   ├── deployPrizePool.js            # `yarn foundry:deploy`
+│   │   ├── demoRound.js                  # `yarn foundry:demo`: one real round, HashScan link per step
+│   │   ├── scheduleBoosts.js             # `yarn foundry:schedule-boosts`: pre-signed HSS boosts
 │   │   └── lib/                          # network config + SDK deployment (shared with the e2e suite)
 │   └── test/
 │       ├── PrizeLedger.t.sol             # unit + fuzz tests of the ledger
@@ -315,16 +338,18 @@ price (≈ 5.2 HBAR at 3M and testnet's 87 tinybar/gas); the deploy script refus
 [The fee reserve](#the-fee-reserve) for why two.
 
 **Deployment.** `ContractCreateFlow` ≈ 3.7M gas. `initialize` ≈ 259k gas plus `TICKET_FEE_HBAR` (default 15) for the
-HTS token-creation fee (about $1); none of that value comes back to the pool, so it is not part of the reserve.
+HTS token-creation fee (about $1). On a Local Node none of that value comes back to the pool; on testnet in October 2026
+HTS charged ≈ 11.6 HBAR and the other ≈ 3.4 HBAR stayed in the pool, where it counts toward the first prize.
 
-**What the testnet deployment actually cost (October 2026): ≈ 70 HBAR.** Budget for it before you deploy:
+**What a testnet deployment actually costs (October 2026): ≈ 60 HBAR plus the seed.** Measured on the live pool's
+deployment; budget for it before you deploy:
 
 | Step | HBAR |
 |---|---|
-| Upload the bytecode: `FileCreate` + 8 × `FileAppend` (4 KB chunks, ≈ 3.8 HBAR each) | ≈ 32.5 |
+| Upload the bytecode: `FileCreate` + 8 × `FileAppend` (4 KB chunks, ≈ 3.8 HBAR each) + `FileDelete` | ≈ 32.5 |
 | `ContractCreate` with the staking election | ≈ 12.8 |
 | `initialize`: HTS token creation (`TICKET_FEE_HBAR`) + gas | ≈ 15.2 |
-| Seed of the fee reserve (`KEEPER_SEED_HBAR`, stays in the pool) | 10 |
+| Seed of the fee reserve (`KEEPER_SEED_HBAR`, stays in the pool) | 10 by default (18 for the live pool) |
 
 The bytecode upload dominates. `ContractCreateFlow` uploads through the File Service because only the HAPI
 `ContractCreate` can set a staking election (see above), and testnet's file fees are currently far higher than its
@@ -332,7 +357,7 @@ gas fees. Then `yarn foundry:demo` (a deposit that schedules the draw, a second 
 most of it deposits that stay withdrawable.
 
 **Round length.** Staking rewards accrue per 24-hour period, so rounds shorter than a day mostly roll over and spend
-fees. The default is 24 hours; the public testnet demo uses shorter rounds so visitors can watch draws happen.
+fees. The default is 24 hours, which is what the live testnet pool uses; the first testnet pool used hourly rounds.
 Testnet pays about 0.19% a year in staking rewards (`/api/v1/network/stake`), so testnet prizes come mostly from
 boosts. Mainnet rates are higher.
 
@@ -423,11 +448,11 @@ the heartbeats an idle local node needs to execute due schedules. The savers' th
 | `DEPLOYER_KEYSTORE_PASSWORD` | shell | prompt | Non-interactive deploys (CI) |
 | `ROUND_SECONDS` | deploy env | `86400` | Round length |
 | `DRAW_GRACE_SECONDS` | deploy env | `600` | Delay before anyone may `triggerDraw` a round with no live schedule |
-| `KEEPER_BUFFER_HBAR` | deploy env | `5` | Fee reserve above principal; a draw is only scheduled while the balance covers it. Keep ≥ 2 draw fees |
+| `KEEPER_BUFFER_HBAR` | deploy env | `8` | Fee reserve above principal; a draw is only scheduled while the balance covers it. Keep ≥ 2 draw fees |
 | `MIN_DEPOSIT_HBAR` | deploy env | `10` | Minimum deposit; sets the cost of filling every participant slot |
 | `MAX_PARTICIPANTS` | deploy env | `100` | Cap that bounds draw gas |
 | `DRAW_GAS_LIMIT` | deploy env | `3000000` | Gas for each scheduled draw; sized for 100 savers (see Costs) |
-| `TICKET_FEE_HBAR` | deploy env | `15` | Value sent to `initialize` for the HTS creation fee (not returned to the pool) |
+| `TICKET_FEE_HBAR` | deploy env | `15` | Value sent to `initialize` for the HTS creation fee (what HTS doesn't charge stays in the pool) |
 | `KEEPER_SEED_HBAR` | deploy env | `10` | Initial boost that funds the fee reserve (must be ≥ `KEEPER_BUFFER_HBAR` minus what `initialize` leaves, or the first draw waits for a boost) |
 | `NEXT_PUBLIC_HEDERA_TESTNET_RPC_URL` | `packages/nextjs/.env.local` | Hashio | JSON-RPC endpoint |
 | `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID` | `packages/nextjs/.env.local` | demo id | WalletConnect |
@@ -471,12 +496,37 @@ No secret is read by the frontend. Never commit `.env` files; they are git-ignor
 ## Testnet proof
 
 <!-- PROOF:START -->
-Everything below happened on **Hedera testnet** and can be checked on HashScan. The interactions were made with
-[`yarn foundry:demo`](#deploy-your-own-pool) against the deployed pool; nothing is simulated.
+Everything below happened on **Hedera testnet** and can be checked on HashScan; nothing is simulated.
 
-**Live app:** <https://scaffold-hbar-prize-savings.vercel.app> (the template's frontend, unmodified, pointed at this pool)
+**Live app:** <https://scaffold-hbar-prize-savings.vercel.app> (the template's frontend, unmodified, pointed at the live pool)
 
-**Deployment** (`yarn foundry:deploy --network testnet`, `ROUND_SECONDS=3600`)
+### Live pool `0.0.10854968` (daily rounds)
+
+Deployed with `yarn foundry:deploy --network testnet` (`ROUND_SECONDS=86400 KEEPER_BUFFER_HBAR=12 KEEPER_SEED_HBAR=18`)
+from commit `7460d07`, which includes the [fee-reserve fix](#the-fee-reserve).
+
+| What | Link |
+|---|---|
+| PrizePool contract `0.0.10854968` (`0x…a5a238`), no admin key; source verified on Sourcify (exact match) | [contract](https://hashscan.io/testnet/contract/0.0.10854968) · [source](https://repo.sourcify.dev/296/0x0000000000000000000000000000000000a5a238) |
+| Created with `ContractCreateFlow` and a staking election: staked to node 3 | [ContractCreate](https://hashscan.io/testnet/transaction/1791104730.442065104) · [mirror: `staked_node_id`](https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.10854968) |
+| `initialize()` creates the PST ticket token `0.0.10854970` (freeze, wipe and supply keys held by the pool, no admin key) and opens round 1 | [initialize](https://hashscan.io/testnet/transaction/1791104733.180471694) · [token](https://hashscan.io/testnet/token/0.0.10854970) |
+| 18 HBAR seed: 12 for the fee reserve, the rest towards the first prize | [boostPrize](https://hashscan.io/testnet/transaction/1791104734.702330104) |
+| `0.0.10844208` deposits 10 HBAR; as round 1's first deposit it makes the contract schedule its own draw | [deposit](https://hashscan.io/testnet/transaction/1791104752.020316359) |
+| The draw schedule the contract created and pays for (`scheduleCall`, HIP-1215), due 2026-10-05 09:05 UTC | [schedule `0.0.10854974`](https://hashscan.io/testnet/schedule/0.0.10854974) |
+| `0.0.10844208` withdraws 3 HBAR; the matching tickets are wiped and 7 HBAR stays in the pool | [withdraw](https://hashscan.io/testnet/transaction/1791105017.722156587) |
+| Four pre-signed 3 HBAR boosts (`yarn foundry:schedule-boosts`) that top up the reserve on Oct 8, 10, 12 and 14, so the pool keeps drawing daily until about Oct 18 | [`0.0.10855010`](https://hashscan.io/testnet/schedule/0.0.10855010) · [`0.0.10855011`](https://hashscan.io/testnet/schedule/0.0.10855011) · [`0.0.10855013`](https://hashscan.io/testnet/schedule/0.0.10855013) · [`0.0.10855014`](https://hashscan.io/testnet/schedule/0.0.10855014) |
+
+Each draw schedules the next one, so new draws keep appearing under *Past draws* in the live app (read from the mirror
+node) and in the contract's transactions on HashScan without anyone calling `draw()`. Anyone can deposit, boost or
+withdraw from the live app with a testnet wallet.
+
+### First pool `0.0.10844239` (before the fee-reserve fix)
+
+The first deployment, with hourly rounds. It ran the full lifecycle below, then stalled: it was deployed with
+`keeperBuffer` = 5 HBAR and the pre-fix contract required the whole reserve inside a draw to schedule the next one, but
+that draw's own up-front fee had already left the balance. With boost-only funding every round that rolled over ended
+the chain (see [The fee reserve](#the-fee-reserve)). It has no admin key, so it could not be patched; the live pool above
+was redeployed from the fixed contract instead.
 
 | What | Link |
 |---|---|
@@ -485,7 +535,7 @@ Everything below happened on **Hedera testnet** and can be checked on HashScan. 
 | `initialize()` creates the PST ticket token `0.0.10844240` (freeze, wipe and supply keys held by the pool, no admin key) and opens round 1 | [initialize](https://hashscan.io/testnet/transaction/1791043535.521640104) · [token](https://hashscan.io/testnet/token/0.0.10844240) |
 | 10 HBAR seed of the fee reserve | [boostPrize](https://hashscan.io/testnet/transaction/1791043536.961552104) |
 
-**One full round, step by step**
+One full round on that pool, step by step:
 
 | # | What happened | Hedera service | Link |
 |---|---|---|---|
@@ -499,8 +549,7 @@ Everything below happened on **Hedera testnet** and can be checked on HashScan. 
 | 8 | `0.0.10844275` withdraws 5 HBAR of principal; the matching tickets are wiped | Smart contracts, HTS | [withdraw](https://hashscan.io/testnet/transaction/1791047155.627483104) |
 
 Nobody called `draw()` in step 7: the transaction was triggered by the schedule from step 2, which the contract created
-and paid for itself. The [Past draws](https://scaffold-hbar-prize-savings.vercel.app) table in the live app reads the same
-event from the mirror node.
+and paid for itself.
 <!-- PROOF:END -->
 
 ## Working with AI agents

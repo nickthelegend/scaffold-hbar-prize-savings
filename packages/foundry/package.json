@@ -12,6 +12,7 @@
     "deploy": "node scripts-js/deployPrizePool.js",
     "demo": "node scripts-js/demoRound.js",
     "seed-demo": "node scripts-js/seedDemoPool.js",
+    "schedule-boosts": "node scripts-js/scheduleBoosts.js",
     "format": "make format",
     "lint": "make lint",
     "lint-staged": "yarn lint",

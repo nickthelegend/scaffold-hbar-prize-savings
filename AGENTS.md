@@ -22,6 +22,7 @@ yarn foundry:account:generate          # deployer keystore
 yarn foundry:compile && yarn foundry:deploy --network testnet|local [--keystore name] [--node id]
 yarn foundry:seed-demo [--keep-alive]  # local node: a pool with savers and executed draws (screens.yaml uses it)
 yarn foundry:demo --network testnet --keystore name  # one real round against the deployed pool, HashScan link per step (spends HBAR)
+yarn foundry:schedule-boosts --keystore name --amount 3 --at <ISO>  # pre-signed HSS boosts that keep a demo pool drawing (spends HBAR when they execute)
 ```
 
 HTS (`0x167`), PRNG (`0x169`) and HSS (`0x16b`) only exist on Hedera networks, so Anvil/Hardhat chains and Foundry
